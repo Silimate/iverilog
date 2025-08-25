@@ -115,3 +115,7 @@ dep
 
 # Check output
 /check.vvp
+
+# Silimate added
+/build/
+*.dSYM
