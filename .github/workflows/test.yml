@@ -29,7 +29,7 @@ jobs:
       run: |
         export PATH="/usr/local/opt/bison/bin:$PATH"
         autoconf
-        ./configure
+        ./configure --enable-libveriuser
         make -j$(nproc) check
         sudo make install
 
@@ -59,7 +59,7 @@ jobs:
     - name: Build, check and install
       run: |
         autoconf
-        ./configure
+        ./configure --enable-libveriuser
         make -j$(nproc) check
         sudo make install
 
@@ -76,10 +76,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: [
-          { msystem: MINGW64, arch: x86_64 }
-        ]
-    name: 🟪 ${{ matrix.msystem}} · ${{ matrix.arch }}
+        include:
+          - { msystem: MINGW64, env: x86_64 }
+          - { msystem: UCRT64,  env: ucrt-x86_64 }
+          - { msystem: CLANG64, env: clang-x86_64 }
+    name: 🟪 ${{ matrix.msystem}}
     defaults:
       run:
         shell: msys2 {0}
@@ -99,9 +100,8 @@ jobs:
         install: >
           git
           base-devel
-          gperf
           python-pip
-          mingw-w64-${{ matrix.arch }}-toolchain
+          mingw-w64-${{ matrix.env }}-perl
 
     - uses: actions/setup-python@v5
       with:
@@ -110,6 +110,9 @@ jobs:
     - name: Build and check
       run: |
         cd msys2
+        if [ ${{ matrix.msystem }} != "CLANG64" ] ; then
+            export IVL_CONFIG_OPTIONS="--enable-libveriuser"
+        fi
         makepkg-mingw --noconfirm --noprogressbar -sCLf
 
     - name: Install
@@ -117,9 +120,13 @@ jobs:
 
     - name: Test
       run: |
-        ./.github/test.sh
+        if [ ${{ matrix.msystem }} = "CLANG64" ] ; then
+            ./.github/test.sh no-pli1
+        else
+            ./.github/test.sh
+        fi
 
     - uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.msystem }}-${{ matrix.arch }}
+        name: ${{ matrix.msystem }}
         path: msys2/*.zst

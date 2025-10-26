@@ -5,13 +5,13 @@
 package Environment;
 
 use strict;
-use warnings;
+#use warnings;
 
 our $VERSION = '1.03';
 
 use base 'Exporter';
 
-our @EXPORT = qw(get_args get_regress_fn get_ivl_version);
+our @EXPORT = qw(get_args get_regress_fn get_ivl_version run_program);
 
 use constant DEF_REGRESS_FN => './regress.list';  # Default regression list.
 use constant DEF_SUFFIX => '';  # Default suffix.
@@ -100,6 +100,28 @@ sub get_ivl_version {
     } else {
         die "Failed to get version from iverilog$sfx -V output";
     }
+}
+
+#
+# Run a subprogram. This avoids spawing an intermediate shell when output
+# is redirected to a log file.
+#
+sub run_program {
+    my ($cmd, $log_mode, $log_file) = @_;
+
+    my $ret;
+    if ($log_mode) {
+        open(OLDOUT, '>&STDOUT');
+        open(OLDERR, '>&STDERR');
+        open(STDOUT, $log_mode, $log_file) or die("couldn't open log file '$log_file'\n");
+        open(STDERR, '>&STDOUT');
+        $ret = system($cmd);
+        open(STDOUT, '>&OLDOUT');
+        open(STDERR, '>&OLDERR');
+    } else {
+        $ret = system($cmd);
+    }
+    $ret;
 }
 
 1;  # Module loaded OK

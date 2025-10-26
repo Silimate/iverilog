@@ -1,5 +1,5 @@
 const char COPYRIGHT[] =
-  "Copyright (c) 1999-2024 Stephen Williams (steve@icarus.com)";
+  "Copyright (c) 1999-2025 Stephen Williams (steve@icarus.com)";
 /*
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -73,7 +73,7 @@ unsigned vhdlpp_libdir_cnt = 0;
 static char**source_list = 0;
 static unsigned source_cnt = 0;
 
-void add_source_file(const char*name)
+static void add_source_file(const char*name)
 {
       if (source_list == 0) {
 	    source_list = calloc(2, sizeof(char*));

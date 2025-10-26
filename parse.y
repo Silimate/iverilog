@@ -268,7 +268,7 @@ static std::list<named_pexpr_t>* make_named_number(const struct vlltype &loc,
       return lst;
 }
 
-static long check_enum_seq_value(const YYLTYPE&loc, verinum *arg, bool zero_ok)
+static long check_enum_seq_value(const YYLTYPE&loc, const verinum *arg, bool zero_ok)
 {
       long value = 1;
 	// We can never have an undefined value in an enumeration name
@@ -308,8 +308,8 @@ static void check_end_label(const struct vlltype&loc, const char *type,
       delete[] end;
 }
 
-static void check_for_loop(const struct vlltype&loc, PExpr*init,
-			   PExpr*cond, Statement*step)
+static void check_for_loop(const struct vlltype&loc, const PExpr*init,
+			   const PExpr*cond, const Statement*step)
 {
       if (generation_flag >= GN_VER2012)
 	    return;
@@ -439,7 +439,7 @@ Module::port_t *module_declare_port(const YYLTYPE&loc, char *id,
 	      // are variables. Unlike the other port types, which are nets in
 	      // that case.
 	    if (net_type == NetNet::IMPLICIT) {
-		  if (vector_type_t*dtype = dynamic_cast<vector_type_t*> (data_type)) {
+		  if (const vector_type_t*dtype = dynamic_cast<vector_type_t*> (data_type)) {
 			if (!dtype->implicit_flag)
 			      net_type = NetNet::IMPLICIT_REG;
 		  } else if (data_type) {
@@ -4998,7 +4998,7 @@ module_item
    */
   | attribute_list_opt K_inout data_type_or_implicit list_of_port_identifiers ';'
       { NetNet::Type use_type = $3 ? NetNet::IMPLICIT : NetNet::NONE;
-	if (vector_type_t*dtype = dynamic_cast<vector_type_t*> ($3)) {
+	if (const vector_type_t*dtype = dynamic_cast<vector_type_t*> ($3)) {
 	      if (dtype->implicit_flag)
 		    use_type = NetNet::NONE;
 	}
@@ -5010,7 +5010,7 @@ module_item
 
   | attribute_list_opt K_input data_type_or_implicit list_of_port_identifiers ';'
       { NetNet::Type use_type = $3 ? NetNet::IMPLICIT : NetNet::NONE;
-	if (vector_type_t*dtype = dynamic_cast<vector_type_t*> ($3)) {
+	if (const vector_type_t*dtype = dynamic_cast<vector_type_t*> ($3)) {
 	      if (dtype->implicit_flag)
 		    use_type = NetNet::NONE;
 	}
@@ -5022,7 +5022,7 @@ module_item
 
   | attribute_list_opt K_output data_type_or_implicit list_of_variable_port_identifiers ';'
       { NetNet::Type use_type = $3 ? NetNet::IMPLICIT : NetNet::NONE;
-	if (vector_type_t*dtype = dynamic_cast<vector_type_t*> ($3)) {
+	if (const vector_type_t*dtype = dynamic_cast<vector_type_t*> ($3)) {
 	      if (dtype->implicit_flag)
 		    use_type = NetNet::NONE;
 	      else

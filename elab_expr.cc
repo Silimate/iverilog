@@ -341,7 +341,7 @@ NetExpr* PEAssignPattern::elaborate_expr_uarray_(Design *des, NetScope *scope,
 	    // have a good way of passing the inner dimensions through the
 	    // generic elaborate_expr() API and assigment patterns is the only
 	    // place where we need it.
-	    if (auto ap = dynamic_cast<PEAssignPattern*>(parms_[idx])) {
+	    if (const auto ap = dynamic_cast<PEAssignPattern*>(parms_[idx])) {
 		  expr = ap->elaborate_expr_uarray_(des, scope, uarray_type,
 						    dims, cur_dim, need_const);
 	    } else if (dynamic_cast<PEConcat*>(parms_[idx])) {
@@ -410,7 +410,7 @@ NetExpr* PEAssignPattern::elaborate_expr_packed_(Design *des, NetScope *scope,
 	    // have a good way of passing the inner dimensions through the
 	    // generic elaborate_expr() API and assigment patterns is the only
 	    // place where we need it.
-	    auto ap = dynamic_cast<PEAssignPattern*>(parms_[idx]);
+	    const auto ap = dynamic_cast<PEAssignPattern*>(parms_[idx]);
 	    if (ap)
 		  expr = ap->elaborate_expr_packed_(des, scope, base_type,
 						    width, dims, cur_dim, need_const);
@@ -755,7 +755,7 @@ NetExpr* PEBinary::elaborate_expr_base_mult_(Design*,
       }
 
 	// Handle a few special case multiplies against constants.
-      if (NetEConst*rp_const = dynamic_cast<NetEConst*> (rp)) {
+      if (const NetEConst*rp_const = dynamic_cast<NetEConst*> (rp)) {
 	    verinum rp_val = rp_const->value();
 
 	    if (!rp_val.is_defined() && (lp->expr_type() == IVL_VT_LOGIC)) {
@@ -1062,7 +1062,7 @@ unsigned PEBLeftWidth::test_width(Design*des, NetScope*scope, width_mode_t&mode)
                   delete right_;
                   right_ = tmp;
             }
-            NetEConst*rc = dynamic_cast<NetEConst*> (rp);
+            const NetEConst*rc = dynamic_cast<NetEConst*> (rp);
 	      // Adjust the expression width that can be converter depending
 	      // on if the R-value is signed or not.
 	    unsigned c_width = sizeof(long)*8;
@@ -1086,7 +1086,7 @@ unsigned PEBLeftWidth::test_width(Design*des, NetScope*scope, width_mode_t&mode)
               // If the left operand is a simple unsized number, we
               // can calculate the actual width required for the power
               // operator.
-            PENumber*lc = dynamic_cast<PENumber*> (left_);
+            const PENumber*lc = dynamic_cast<PENumber*> (left_);
 
               // Now calculate the lossless width.
             unsigned use_width = expr_width_;
@@ -1259,7 +1259,7 @@ NetExpr*PEBShift::elaborate_expr_leaf(Design*des, NetExpr*lp, NetExpr*rp,
 	// there are some other interesting cases. But if neither are
 	// constant, then there is the general case.
 
-      if (NetEConst*lpc = dynamic_cast<NetEConst*> (lp)) {
+      if (const NetEConst*lpc = dynamic_cast<NetEConst*> (lp)) {
 
 	      // Special case: The left expression is zero. If the
 	      // shift value contains no 'x' or 'z' bits, the result
@@ -1279,7 +1279,7 @@ NetExpr*PEBShift::elaborate_expr_leaf(Design*des, NetExpr*lp, NetExpr*rp,
                   return tmp;
             }
 
-      } else if (NetEConst*rpc = dynamic_cast<NetEConst*> (rp)) {
+      } else if (const NetEConst*rpc = dynamic_cast<NetEConst*> (rp)) {
 
               // Special case: The shift value contains 'x' or 'z' bits.
               // Elaborate as a constant-x.
@@ -1382,7 +1382,7 @@ unsigned PECallFunction::test_width_sfunc_(Design*des, NetScope*scope,
 		  return 0;
 	    }
 
-	    NetExpr*nexpr = elab_and_eval(des, scope, pexpr, -1, true);
+	    const NetExpr*nexpr = elab_and_eval(des, scope, pexpr, -1, true);
 	    if (nexpr == 0) {
 		  cerr << get_fileline() << ": error: "
 		       << "Unable to evaluate " << name
@@ -1519,7 +1519,7 @@ static NetFuncDef* find_function_definition(Design*des, NetScope*,
 }
 
 unsigned PECallFunction::test_width_method_(Design*, NetScope*,
-					    symbol_search_results&search_results,
+					    const symbol_search_results&search_results,
 					    width_mode_t&)
 {
       if (!gn_system_verilog())
@@ -1560,7 +1560,7 @@ unsigned PECallFunction::test_width_method_(Design*, NetScope*,
       if (search_results.net && search_results.net->data_type()==IVL_VT_DARRAY
 	  && search_results.path_head.back().index.empty()) {
 
-	    NetNet*net = search_results.net;
+	    const NetNet*net = search_results.net;
 	    const netdarray_t*darray = net->darray_type();
 	    ivl_assert(*this, darray);
 
@@ -1583,7 +1583,7 @@ unsigned PECallFunction::test_width_method_(Design*, NetScope*,
       if (search_results.net && search_results.net->data_type()==IVL_VT_QUEUE
 	  && search_results.path_head.back().index.empty()) {
 
-	    NetNet*net = search_results.net;
+	    const NetNet*net = search_results.net;
 	    const netdarray_t*darray = net->darray_type();
 	    ivl_assert(*this, darray);
 
@@ -1616,7 +1616,7 @@ unsigned PECallFunction::test_width_method_(Design*, NetScope*,
 	  && (search_results.net->data_type()==IVL_VT_QUEUE || search_results.net->data_type()==IVL_VT_DARRAY)
 	  && search_results.path_head.back().index.size()) {
 
-	    NetNet*net = search_results.net;
+	    const NetNet*net = search_results.net;
 	    const netdarray_t*darray = net->darray_type();
 	    ivl_assert(*this, darray);
 
@@ -1646,7 +1646,7 @@ unsigned PECallFunction::test_width_method_(Design*, NetScope*,
 
       // Enumeration variable. Check for the various enumeration methods.
       if (search_results.net && search_results.net->enumeration()) {
-	    NetNet*net = search_results.net;
+	    const NetNet*net = search_results.net;
 	    const netenum_t*enum_type = net->enumeration();
 
 	    if (method_name=="first" || method_name=="last"
@@ -1692,7 +1692,7 @@ unsigned PECallFunction::test_width_method_(Design*, NetScope*,
 	    }
 
 	    // Get the return value of the method function.
-	    if (NetNet*res = method->find_signal(method->basename())) {
+	    if (const NetNet*res = method->find_signal(method->basename())) {
 		  expr_type_   = res->data_type();
 		  expr_width_  = res->vector_width();
 		  min_width_   = expr_width_;
@@ -1786,7 +1786,7 @@ unsigned PECallFunction::test_width(Design*des, NetScope*scope,
 		       << "." << endl;
 	    }
 
-	    NetNet*res = search_results.net;
+	    const NetNet*res = search_results.net;
 	    expr_type_   = res->data_type();
 	    expr_width_  = res->vector_width();
             min_width_   = expr_width_;
@@ -1845,7 +1845,7 @@ unsigned PECallFunction::test_width(Design*des, NetScope*scope,
       NetScope*dscope = def->scope();
       ivl_assert(*this, dscope);
 
-      if (NetNet*res = dscope->find_signal(dscope->basename())) {
+      if (const NetNet*res = dscope->find_signal(dscope->basename())) {
 	    expr_type_   = res->data_type();
 	    expr_width_  = res->vector_width();
             min_width_   = expr_width_;
@@ -1906,7 +1906,7 @@ NetExpr* PECallFunction::elaborate_sfunc_(Design*des, NetScope*scope,
       if (name=="$ivlh_to_unsigned") {
 	    ivl_assert(*this, parms_.size()==2);
 
-	    PExpr *expr = parms_[0].parm;
+	    const PExpr *expr = parms_[0].parm;
 	    ivl_assert(*this, expr);
 	    NetExpr*sub = expr->elaborate_expr(des, scope, expr->expr_width(), flags);
 	    return cast_to_width_(sub, expr_wid);
@@ -1934,7 +1934,7 @@ NetExpr* PECallFunction::elaborate_sfunc_(Design*des, NetScope*scope,
 		  cerr << get_fileline() << ": PECallFunction::elaborate_sfunc_: "
 		       << name << " expression is the argument cast to expr_wid=" << expr_wid << endl;
 	    }
-	    PExpr *expr = parms_[0].parm;
+	    const PExpr *expr = parms_[0].parm;
 	    NetExpr*sub = expr->elaborate_expr(des, scope, expr_width_, flags);
 
 	    return cast_to_width_(sub, expr_wid);
@@ -1959,7 +1959,7 @@ NetExpr* PECallFunction::elaborate_sfunc_(Design*des, NetScope*scope,
 	    PExpr *expr = parms_[0].parm;
 
 	    uint64_t use_width = 0;
-	    if (PETypename*type_expr = dynamic_cast<PETypename*>(expr)) {
+	    if (const PETypename*type_expr = dynamic_cast<PETypename*>(expr)) {
 		  ivl_type_t data_type = type_expr->get_type()->elaborate_type(des, scope);
 		  ivl_assert(*this, data_type);
 		  use_width = 1;
@@ -2009,7 +2009,7 @@ NetExpr* PECallFunction::elaborate_sfunc_(Design*des, NetScope*scope,
 		  return 0;
 	    }
 
-	    PExpr *expr = parms_[0].parm;
+	    const PExpr *expr = parms_[0].parm;
 
 	    verinum val (expr->has_sign() ? verinum::V1 : verinum::V0, 1);
 	    NetEConst*sub = new NetEConst(val);
@@ -2104,7 +2104,7 @@ NetExpr* PECallFunction::elaborate_access_func_(Design*des, NetScope*scope,
 
       if (parms_.size() == 1) {
 	    PExpr *arg1 = parms_[0].parm;
-	    PEIdent*arg_ident = dynamic_cast<PEIdent*> (arg1);
+	    const PEIdent*arg_ident = dynamic_cast<PEIdent*> (arg1);
 	    ivl_assert(*this, arg_ident);
 
 	    const pform_name_t&path = arg_ident->path().name;
@@ -2264,7 +2264,7 @@ static NetExpr* check_for_enum_methods(const LineInfo*li,
 				"enumeration method argument " << use_path << "."
 			     << method_name << "(" << args[0] << ")." << endl;
 			des->errors++;
-		  } else if (NetEEvent *evt = dynamic_cast<NetEEvent*> (count)) {
+		  } else if (const NetEEvent *evt = dynamic_cast<NetEEvent*> (count)) {
 			cerr << evt->get_fileline() << ": error: An event '"
 			     << evt->event()->name() << "' cannot be an enumeration "
 				"method argument." << endl;
@@ -3024,7 +3024,7 @@ NetExpr* PECallFunction::elaborate_base_(Design*des, NetScope*scope, NetScope*ds
       if (! check_call_matches_definition_(des, dscope))
 	    return 0;
 
-      NetFuncDef*def = dscope->func_def();
+      const NetFuncDef*def = dscope->func_def();
 
       bool need_const = NEED_CONST & flags;
 
@@ -3124,7 +3124,7 @@ NetExpr* PECallFunction::elaborate_base_(Design*des, NetScope*scope, NetScope*ds
  * def->port(0) will be the "this" argument and should be skipped.
  */
 unsigned PECallFunction::elaborate_arguments_(Design*des, NetScope*scope,
-					      NetFuncDef*def, bool need_const,
+					      const NetFuncDef*def, bool need_const,
 					      vector<NetExpr*>&parms,
 					      unsigned parm_off) const
 {
@@ -3160,7 +3160,7 @@ unsigned PECallFunction::elaborate_arguments_(Design*des, NetScope*scope,
 			continue;
 		  }
 
-		  if (NetEEvent*evt = dynamic_cast<NetEEvent*> (parms[pidx])) {
+		  if (const NetEEvent*evt = dynamic_cast<NetEEvent*> (parms[pidx])) {
 			cerr << evt->get_fileline() << ": error: An event '"
 			     << evt->event()->name() << "' can not be a user "
 			        "function argument." << endl;
@@ -3272,7 +3272,7 @@ NetExpr* PECallFunction::elaborate_expr_method_(Design*des, NetScope*scope,
       if (search_results.net && search_results.net->data_type()==IVL_VT_QUEUE
 	  && search_results.path_head.back().index.size()==1) {
 
-	    NetNet*net = search_results.net;
+	    const NetNet*net = search_results.net;
 	    const netdarray_t*darray = net->darray_type();
 	    const index_component_t&use_index = search_results.path_head.back().index.back();
 	    ivl_assert(*this, use_index.msb != 0);
@@ -3378,7 +3378,7 @@ NetExpr* PECallFunction::elaborate_expr_method_(Design*des, NetScope*scope,
       // Enumeration methods.
       if (search_results.net && search_results.net->enumeration()) {
 
-	    NetNet*net = search_results.net;
+	    const NetNet*net = search_results.net;
 	    const netenum_t*netenum = net->enumeration();
 
 	    // Get the method name that we are looking for.
@@ -3408,7 +3408,7 @@ NetExpr* PECallFunction::elaborate_expr_method_(Design*des, NetScope*scope,
 		  return 0;
 	    }
 
-	    NetFuncDef*def = method->func_def();
+	    const NetFuncDef*def = method->func_def();
 	    ivl_assert(*this, def);
 
 	    NetNet*res = method->find_signal(method->basename());
@@ -3509,8 +3509,8 @@ NetExpr* PECallFunction::elaborate_expr_method_(Design*des, NetScope*scope,
  * expression of some sort (it's a parameter value) and most methods are
  * stable in the sense that they generate a constant value for a constant input.
  */
-NetExpr* PECallFunction::elaborate_expr_method_par_(Design*des, NetScope*scope,
-						    symbol_search_results&search_results)
+NetExpr* PECallFunction::elaborate_expr_method_par_(Design*des, const NetScope*scope,
+						    const symbol_search_results&search_results)
 						    const
 {
       ivl_assert(*this, search_results.par_val);
@@ -3581,7 +3581,7 @@ unsigned PECastSize::test_width(Design*des, NetScope*scope, width_mode_t&)
       expr_width_ = 0;
 
       NetExpr*size_ex = elab_and_eval(des, scope, size_, -1, true);
-      NetEConst*size_ce = dynamic_cast<NetEConst*>(size_ex);
+      const NetEConst*size_ce = dynamic_cast<NetEConst*>(size_ex);
       if (size_ce && !size_ce->value().is_negative())
 	    expr_width_ = size_ce->value().as_ulong();
       delete size_ex;
@@ -3837,7 +3837,7 @@ unsigned PEConcat::test_width(Design*des, NetScope*scope, width_mode_t&)
 		  return 0;
 	    }
 
-	    NetEConst*rep = dynamic_cast<NetEConst*>(tmp);
+	    const NetEConst*rep = dynamic_cast<NetEConst*>(tmp);
 
 	    if (rep == 0) {
 		  cerr << get_fileline() << ": error: "
@@ -4047,7 +4047,7 @@ NetExpr* PEFNumber::elaborate_expr(Design*, NetScope*, unsigned, unsigned) const
       return tmp;
 }
 
-bool PEIdent::calculate_packed_indices_(Design*des, NetScope*scope, NetNet*net,
+bool PEIdent::calculate_packed_indices_(Design*des, NetScope*scope, const NetNet*net,
 					list<long>&prefix_indices) const
 {
       unsigned dimensions = net->unpacked_dimensions() + net->packed_dimensions();
@@ -4094,7 +4094,7 @@ bool PEIdent::calculate_bits_(Design*des, NetScope*scope,
 	   bit select expressions which must be constant. */
 
       NetExpr*msb_ex = elab_and_eval(des, scope, index_tail.msb, -1, true);
-      NetEConst*msb_c = dynamic_cast<NetEConst*>(msb_ex);
+      const NetEConst*msb_c = dynamic_cast<NetEConst*>(msb_ex);
       if (msb_c == 0) {
 	    cerr << index_tail.msb->get_fileline() << ": error: "
 	            "Bit select expressions must be a constant integral value."
@@ -4120,7 +4120,7 @@ bool PEIdent::calculate_bits_(Design*des, NetScope*scope,
  * function calculates their values. Note that this method does *not*
  * convert the values to canonical form.
  */
-bool PEIdent::calculate_parts_(Design*des, NetScope*scope,
+void PEIdent::calculate_parts_(Design*des, NetScope*scope,
 			       long&msb, long&lsb, bool&defined) const
 {
       defined = true;
@@ -4136,7 +4136,7 @@ bool PEIdent::calculate_parts_(Design*des, NetScope*scope,
 	   constant. Evaluate them and pass the results back to
 	   the caller. */
       NetExpr*lsb_ex = elab_and_eval(des, scope, index_tail.lsb, -1, true);
-      NetEConst*lsb_c = dynamic_cast<NetEConst*>(lsb_ex);
+      const NetEConst*lsb_c = dynamic_cast<NetEConst*>(lsb_ex);
       if (lsb_c == 0) {
 	    cerr << index_tail.lsb->get_fileline() << ": error: "
 	            "Part select expressions must be constant integral values."
@@ -4154,7 +4154,7 @@ bool PEIdent::calculate_parts_(Design*des, NetScope*scope,
       }
 
       NetExpr*msb_ex = elab_and_eval(des, scope, index_tail.msb, -1, true);
-      NetEConst*msb_c = dynamic_cast<NetEConst*>(msb_ex);
+      const NetEConst*msb_c = dynamic_cast<NetEConst*>(msb_ex);
       if (msb_c == 0) {
 	    cerr << index_tail.msb->get_fileline() << ": error: "
 	            "Part select expressions must be constant integral values."
@@ -4173,7 +4173,6 @@ bool PEIdent::calculate_parts_(Design*des, NetScope*scope,
 
       delete msb_ex;
       delete lsb_ex;
-      return true;
 }
 
 bool PEIdent::calculate_up_do_width_(Design*des, NetScope*scope,
@@ -4191,7 +4190,7 @@ bool PEIdent::calculate_up_do_width_(Design*des, NetScope*scope,
 	   first. If the expression is not constant, error but guess 1
 	   so we can keep going and find more errors. */
       NetExpr*wid_ex = elab_and_eval(des, scope, index_tail.lsb, -1, true);
-      NetEConst*wid_c = dynamic_cast<NetEConst*>(wid_ex);
+      const NetEConst*wid_c = dynamic_cast<NetEConst*>(wid_ex);
 
       wid = wid_c ? wid_c->value().as_ulong() : 0;
       if (wid == 0) {
@@ -5204,7 +5203,7 @@ NetExpr* PEIdent::elaborate_expr_param_bit_(Design*des, NetScope*scope,
 
 	// Handle the special case that the selection is constant. In this
 	// case, just precalculate the entire constant result.
-      if (NetEConst*sel_c = dynamic_cast<NetEConst*> (sel)) {
+      if (const NetEConst*sel_c = dynamic_cast<NetEConst*> (sel)) {
 	      // Special case: If the bit select is constant and not fully
 	      // defined, then we know that the result must be 1'bx.
 	    if (! sel_c->value().is_defined()) {
@@ -5274,9 +5273,7 @@ NetExpr* PEIdent::elaborate_expr_param_part_(Design*des, NetScope*scope,
 {
       long msv, lsv;
       bool parts_defined_flag;
-      bool flag = calculate_parts_(des, scope, msv, lsv, parts_defined_flag);
-      if (!flag)
-	    return 0;
+      calculate_parts_(des, scope, msv, lsv, parts_defined_flag);
 
       const NetEConst*par_ex = dynamic_cast<const NetEConst*> (par);
       ivl_assert(*this, par_ex);
@@ -5428,7 +5425,7 @@ NetExpr* PEIdent::elaborate_expr_param_idx_up_(Design*des, NetScope*scope,
 
 	// Handle the special case that the base is constant. In this
 	// case, just precalculate the entire constant result.
-      if (NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
+      if (const NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
 	    if (! base_c->value().is_defined()) {
 		  NetEConst *ex;
 		  ex = new NetEConst(verinum(verinum::Vx, wid, true));
@@ -5516,7 +5513,7 @@ NetExpr* PEIdent::elaborate_expr_param_idx_do_(Design*des, NetScope*scope,
 
 	// Handle the special case that the base is constant. In this
 	// case, just precalculate the entire constant result.
-      if (NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
+      if (const NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
 	    if (! base_c->value().is_defined()) {
 		  NetEConst *ex;
 		  ex = new NetEConst(verinum(verinum::Vx, wid, true));
@@ -5851,9 +5848,7 @@ NetExpr* PEIdent::elaborate_expr_net_part_(Design*des, NetScope*scope,
 
       long msv, lsv;
       bool parts_defined_flag;
-      bool flag = calculate_parts_(des, scope, msv, lsv, parts_defined_flag);
-      if (!flag)
-	    return 0;
+      calculate_parts_(des, scope, msv, lsv, parts_defined_flag);
 
 	/* But wait... if the part select expressions are not fully
 	   defined, then fall back on the tested width. */
@@ -6011,7 +6006,7 @@ NetExpr* PEIdent::elaborate_expr_net_idx_up_(Design*des, NetScope*scope,
 	// Handle the special case that the base is constant as
 	// well. In this case it can be converted to a conventional
 	// part select.
-      if (NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
+      if (const NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
 	    NetExpr*ex;
 	    if (base_c->value().is_defined()) {
 		  long lsv = base_c->value().as_long();
@@ -6178,7 +6173,7 @@ NetExpr* PEIdent::elaborate_expr_net_idx_do_(Design*des, NetScope*scope,
 	// Handle the special case that the base is constant as
 	// well. In this case it can be converted to a conventional
 	// part select.
-      if (NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
+      if (const NetEConst*base_c = dynamic_cast<NetEConst*> (base)) {
 	    NetExpr*ex;
 	    if (base_c->value().is_defined()) {
 		  long lsv = base_c->value().as_long();
@@ -6352,7 +6347,7 @@ NetExpr* PEIdent::elaborate_expr_net_bit_(Design*des, NetScope*scope,
 	// If the bit select is constant, then treat it similar
 	// to the part select, so that I save the effort of
 	// making a mux part in the netlist.
-      if (NetEConst*msc = dynamic_cast<NetEConst*> (mux)) {
+      if (const NetEConst*msc = dynamic_cast<NetEConst*> (mux)) {
 
 	    if (debug_elaborate) {
 		  cerr << get_fileline() << ": PEIdent::elaborate_expr_net_bit_: "
@@ -6722,7 +6717,7 @@ NetExpr* PENewClass::elaborate_expr_constructor_(Design*des, NetScope*scope,
       }
 
 
-      NetFuncDef*def = new_scope->func_def();
+      const NetFuncDef*def = new_scope->func_def();
       if (def == 0) {
 	    cerr << get_fileline() << ": internal error: "
 		 << "Scope " << scope_path(new_scope)
@@ -6763,7 +6758,7 @@ NetExpr* PENewClass::elaborate_expr_constructor_(Design*des, NetScope*scope,
 
 	      // Ran out of explicit arguments. Is there a default
 	      // argument we can use?
-	    if (NetExpr*tmp = def->port_defe(idx)) {
+	    if (const NetExpr*tmp = def->port_defe(idx)) {
 		  parms[idx] = tmp->dup_expr();
 		  continue;
 	    }
@@ -7120,7 +7115,7 @@ NetExpr*PETernary::elaborate_expr(Design*des, NetScope*scope,
 
 	// Verilog doesn't say that we must do short circuit evaluation
 	// of ternary expressions, but it doesn't disallow it.
-      if (NetEConst*tmp = dynamic_cast<NetEConst*> (con)) {
+      if (const NetEConst*tmp = dynamic_cast<NetEConst*> (con)) {
 	    verinum cval = tmp->value();
 	    ivl_assert(*this, cval.len()==1);
 
@@ -7386,7 +7381,7 @@ NetExpr* PEUnary::elaborate_expr(Design*des, NetScope*scope,
 	    break;
 
 	  case '-':
-	    if (NetEConst*ipc = dynamic_cast<NetEConst*>(ip)) {
+	    if (const NetEConst*ipc = dynamic_cast<NetEConst*>(ip)) {
 
 		  verinum val = - ipc->value();
 		  tmp = new NetEConst(val);
@@ -7394,7 +7389,7 @@ NetExpr* PEUnary::elaborate_expr(Design*des, NetScope*scope,
 		  tmp->set_line(*this);
 		  delete ip;
 
-	    } else if (NetECReal*ipr = dynamic_cast<NetECReal*>(ip)) {
+	    } else if (const NetECReal*ipr = dynamic_cast<NetECReal*>(ip)) {
 
 		    /* When taking the - of a real, fold this into the
 		       constant value. */
@@ -7417,7 +7412,7 @@ NetExpr* PEUnary::elaborate_expr(Design*des, NetScope*scope,
 	      /* If the operand to unary ! is a constant, then I can
 		 evaluate this expression here and return a logical
 		 constant in its place. */
-	    if (NetEConst*ipc = dynamic_cast<NetEConst*>(ip)) {
+	    if (const NetEConst*ipc = dynamic_cast<NetEConst*>(ip)) {
 		  verinum val = ipc->value();
 		  unsigned v1 = 0;
 		  unsigned vx = 0;
@@ -7445,7 +7440,7 @@ NetExpr* PEUnary::elaborate_expr(Design*des, NetScope*scope,
 		  tmp = new NetEConst(vres);
 		  tmp->set_line(*this);
 		  delete ip;
-	    } else if (NetECReal*ipr = dynamic_cast<NetECReal*>(ip)) {
+	    } else if (const NetECReal*ipr = dynamic_cast<NetECReal*>(ip)) {
 		  verinum::V res;
 		  if (ipr->value().as_double() == 0.0) res = verinum::V1;
 		  else res = verinum::V0;
@@ -7527,7 +7522,7 @@ NetNet* Design::find_discipline_reference(ivl_discipline_t dis, NetScope*scope)
       if (gnd) return gnd;
 
       string name = string(dis->name()) + "$gnd";
-      netvector_t*gnd_vec = new netvector_t(IVL_VT_REAL,0,0);
+      const netvector_t*gnd_vec = new netvector_t(IVL_VT_REAL,0,0);
       gnd = new NetNet(scope, lex_strings.make(name), NetNet::WIRE, gnd_vec);
       gnd->set_discipline(dis);
       discipline_references_[dis->name()] = gnd;

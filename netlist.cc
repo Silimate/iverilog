@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-2024 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 1998-2025 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -1013,7 +1013,7 @@ NetProcTop::~NetProcTop()
       bool flag = false;
       for (unsigned idx = 0 ;  idx < nex_set.size() ;  idx += 1) {
 
-	    NetNet*net = nex_set[idx].lnk.nexus()->pick_any_net();
+	    const NetNet*net = nex_set[idx].lnk.nexus()->pick_any_net();
 	    if (net->peek_lref() > 0) {
 		  cerr << get_fileline() << ": warning: '" << net->name()
 		       << "' is driven by more than one process." << endl;
@@ -3070,7 +3070,7 @@ static void check_if_logic_l_value(const NetAssignBase *base,
       const NetAssign_*lval = base->l_val(0);
       if (! lval) return;
 
-      NetNet*sig = lval->sig();
+      const NetNet*sig = lval->sig();
       if (! sig) return;
 
       if ((sig->data_type() != IVL_VT_BOOL) &&
@@ -3271,7 +3271,7 @@ bool NetForever::check_synth(ivl_process_type_t pr_type,
  * structure for synthesis.
  */
 static void print_for_idx_warning(const NetProc*proc, const char*check,
-                                  ivl_process_type_t pr_type, NetNet*idx)
+                                  ivl_process_type_t pr_type, const NetNet*idx)
 {
       cerr << proc->get_fileline() << ": warning: A for statement must use "
               "the index (" << idx->name() << ") in the " << check
@@ -3293,7 +3293,7 @@ static void check_for_const_synth(const NetExpr*expr, const NetProc*proc,
 static void check_for_bin_synth(const NetExpr*left,const NetExpr*right,
                                 const char*str, const char*check,
                                 const NetProc*proc,
-                                ivl_process_type_t pr_type, NetNet*index)
+                                ivl_process_type_t pr_type, const NetNet*index)
 {
       const NetESignal*lsig = dynamic_cast<const NetESignal*>(left);
       const NetESignal*rsig = dynamic_cast<const NetESignal*>(right);
@@ -3327,7 +3327,7 @@ static void print_for_step_warning(const NetProc*proc,
 }
 
 static void print_for_step_warning(const NetProc*proc,
-                                   ivl_process_type_t pr_type, NetNet*idx)
+                                   ivl_process_type_t pr_type, const NetNet*idx)
 {
       cerr << proc->get_fileline() << ": warning: A for statement step must "
               "be an assignment to the index variable ("
@@ -3336,7 +3336,7 @@ static void print_for_step_warning(const NetProc*proc,
 }
 
 static void check_for_bstep_synth(const NetExpr*expr, const NetProc*proc,
-                                  ivl_process_type_t pr_type, NetNet*index)
+                                  ivl_process_type_t pr_type, const NetNet*index)
 {
       if (const NetECast*tmp = dynamic_cast<const NetECast*>(expr)) {
 	    expr = tmp->expr();
@@ -3355,7 +3355,7 @@ static void check_for_bstep_synth(const NetExpr*expr, const NetProc*proc,
 }
 
 static void check_for_step_synth(const NetAssign*assign, const NetProc*proc,
-                                 ivl_process_type_t pr_type, NetNet*index)
+                                 ivl_process_type_t pr_type, const NetNet*index)
 {
       if (assign->l_val_count() != 1) {
 	    print_for_step_warning(proc, pr_type);
@@ -3451,7 +3451,7 @@ bool NetScope::check_synth(ivl_process_type_t pr_type,
 {
       bool result = false;
 	// Skip local events/signals
-      for (NetEvent*cur = events_ ;  cur ;  cur = cur->snext_) {
+      for (const NetEvent*cur = events_ ;  cur ;  cur = cur->snext_) {
 	    if (cur->local_flag()) continue;
 	    cerr << cur->get_fileline() << ": warning: An event ("
 	         << cur->name() << ") cannot be synthesized "
