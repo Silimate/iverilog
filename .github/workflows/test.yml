@@ -1,4 +1,4 @@
-name: test
+name: Build and run tests
 
 on:
   # Every push onto the main branch triggers a retest.
