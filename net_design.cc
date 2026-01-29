@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2000-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -124,9 +124,9 @@ NetScope* Design::find_root_scope()
       return root_scopes_.front();
 }
 
-list<NetScope*> Design::find_root_scopes() const
+list<NetScope*>&Design::find_root_scopes() const
 {
-      return root_scopes_;
+      return const_cast<list<NetScope*>&>(root_scopes_);
 }
 
 NetScope* Design::make_package_scope(perm_string name, NetScope*unit_scope,
@@ -614,8 +614,6 @@ void NetScope::evaluate_parameter_logic_(Design*des, param_ref_t cur)
 		  expr->cast_signed(param_type->get_signed());
 
 	    if (!expr->has_width()) {
-		  expr = pad_to_width(expr, integer_width, *expr);
-	    } else if (param_type->slice_dimensions().size()==0 && !expr->has_width()) {
 		  expr = pad_to_width(expr, integer_width, *expr);
 	    }
 	    break;

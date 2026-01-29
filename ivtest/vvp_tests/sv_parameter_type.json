@@ -1,5 +1,10 @@
 {
     "type" : "normal",
     "source" : "sv_parameter_type.v",
-    "iverilog-args" : [ "-g2012" ]
+    "iverilog-args" : [ "-g2012" ],
+    "vlog95" : {
+        "__comment"     : "No support for two-state variables.",
+        "type"          : "NI",
+        "iverilog-args" : [ "-pallowsigned=1" ]
+    }
 }

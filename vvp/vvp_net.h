@@ -1,7 +1,7 @@
 #ifndef IVL_vvp_net_H
 #define IVL_vvp_net_H
 /*
- * Copyright (c) 2004-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2004-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -1409,7 +1409,7 @@ class vvp_fun_force : public vvp_net_fun_t {
 class vvp_fun_drive  : public vvp_net_fun_t {
 
     public:
-      vvp_fun_drive(unsigned str0 =6, unsigned str1 =6);
+      explicit vvp_fun_drive(unsigned str0 =6, unsigned str1 =6);
       ~vvp_fun_drive() override;
 
       void recv_vec4(vvp_net_ptr_t port, const vvp_vector4_t&bit,
@@ -1473,8 +1473,8 @@ class vvp_wide_fun_core : public vvp_net_fun_t {
       vvp_wide_fun_core(vvp_net_t*net, unsigned nports);
       virtual ~vvp_wide_fun_core() override;
 	// These objects are not perm allocated.
-      void* operator new(std::size_t size) { return ::new char[size]; }
-      void operator delete(void* ptr) { ::delete[](static_cast<char*>(ptr)); }
+      static void* operator new(std::size_t size) { return ::new char[size]; }
+      static void operator delete(void* ptr) { ::delete[](static_cast<char*>(ptr)); }
 
     protected:
       void propagate_vec4(const vvp_vector4_t&bit, vvp_time64_t delay =0);

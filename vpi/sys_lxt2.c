@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2003-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -68,7 +68,7 @@ static struct vcd_info*new_vcd_info(void)
 	    struct vcd_info_chunk*tmp = calloc(1, sizeof(struct vcd_info_chunk));
 	    tmp->chunk_fill = 0;
 	    tmp->chunk_next = cur_chunk;
-	    info_chunk_list = cur_chunk = tmp;
+	    info_chunk_list = tmp;
 	    return info_chunk_list->data + 0;
       }
 
@@ -104,7 +104,7 @@ static void delete_all_vcd_info(void)
  * if they are in the list already, even if they are at the end of the
  * list.
  */
-# define VCD_INFO_ENDP ((struct vcd_info*)1)
+#define VCD_INFO_ENDP ((struct vcd_info*)(uintptr_t) 0x01)
 static struct vcd_info *vcd_dmp_list = VCD_INFO_ENDP;
 
 static PLI_UINT64 vcd_cur_time = 0;
@@ -182,7 +182,7 @@ static char *create_full_name(const char *name)
       char *n, *n2;
       int len = 0;
       int is_esc_id = is_escaped_id(name);
-      struct lxt_scope *t = lxt_scope_head;
+      const struct lxt_scope *t = lxt_scope_head;
 
 	/* Figure out how long the combined string will be. */
       while(t) {
@@ -467,7 +467,6 @@ static PLI_INT32 sys_dumpall_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
 
 static void *close_dumpfile(void)
 {
-      vcd_work_terminate();
       lxt2_wr_close(dump_file);
       dump_file = NULL;
       return NULL;
@@ -583,7 +582,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 
       const char* name;
       const char* ident;
-      int nexus_id;
+      int64_t nexus_id;
 
       switch (vpi_get(vpiType, item)) {
 
@@ -618,7 +617,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
             if (skip || vpi_get(vpiAutomatic, item)) break;
 
 	    name = vpi_get_str(vpiName, item);
-	    nexus_id = vpi_get(_vpiNexusId, item);
+	    nexus_id = vpi_get64(_vpiNexusId, item);
 	    if (nexus_id) {
 		  ident = find_nexus_ident(nexus_id);
 	    } else {

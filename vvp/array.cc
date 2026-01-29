@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2007-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -1278,8 +1278,8 @@ static void array_attach_port(vvp_array_t array, vvp_fun_arrayport*fun)
 
 class array_word_value_callback : public value_callback {
     public:
-      inline explicit array_word_value_callback(p_cb_data data)
-      : value_callback(data)
+      inline explicit array_word_value_callback(p_cb_data data, long addr)
+      : value_callback(data), word_addr(addr)
       { }
 
     public:
@@ -1442,8 +1442,11 @@ bool array_port_resolv_list_t::resolve(bool mes)
 
 class array_word_part_callback : public array_word_value_callback {
     public:
-      explicit array_word_part_callback(p_cb_data data);
+      explicit array_word_part_callback(p_cb_data data, long addr);
       ~array_word_part_callback() override;
+
+      array_word_part_callback(const array_word_part_callback&) = delete;
+      array_word_part_callback& operator=(const array_word_part_callback&) = delete;
 
       bool test_value_callback_ready(void) override;
 
@@ -1451,8 +1454,8 @@ class array_word_part_callback : public array_word_value_callback {
       char*value_bits_;
 };
 
-array_word_part_callback::array_word_part_callback(p_cb_data data)
-: array_word_value_callback(data)
+array_word_part_callback::array_word_part_callback(p_cb_data data, long addr)
+: array_word_value_callback(data, addr)
 {
 	// Get the initial value of the part, to use as a reference.
       struct __vpiArrayVthrAPV*apvword = dynamic_cast<__vpiArrayVthrAPV*>(data->obj);
@@ -1497,18 +1500,15 @@ value_callback*vpip_array_word_change(p_cb_data data)
       if (const struct __vpiArrayWord*word = array_var_word_from_handle(data->obj)) {
 	    parent = static_cast<__vpiArray*>(word->get_parent());
 	    unsigned addr = word->get_index();
-	    cbh = new array_word_value_callback(data);
-	    cbh->word_addr = addr;
+	    cbh = new array_word_value_callback(data, addr);
 
       } else if (struct __vpiArrayVthrA*tword = dynamic_cast<__vpiArrayVthrA*>(data->obj)) {
 	    parent = tword->array;
-	    cbh = new array_word_value_callback(data);
-	    cbh->word_addr = tword->address;
+	    cbh = new array_word_value_callback(data, tword->address);
 
       } else if (struct __vpiArrayVthrAPV*apvword = dynamic_cast<__vpiArrayVthrAPV*>(data->obj)) {
 	    parent = apvword->array;
-	    cbh = new array_word_part_callback(data);
-	    cbh->word_addr = apvword->word_sel;
+	    cbh = new array_word_part_callback(data, apvword->word_sel);
       }
 
       assert(cbh);
@@ -1521,11 +1521,10 @@ value_callback*vpip_array_word_change(p_cb_data data)
 
 value_callback* vpip_array_change(p_cb_data data)
 {
-      array_word_value_callback*cbh = new array_word_value_callback(data);
+      array_word_value_callback*cbh = new array_word_value_callback(data, -1);
       assert(data->obj);
 
       struct __vpiArray*arr = dynamic_cast<__vpiArray*>(data->obj);
-      cbh->word_addr = -1; // This is a callback for every element.
       cbh->next = arr->vpi_callbacks;
       arr->vpi_callbacks = cbh;
       return cbh;

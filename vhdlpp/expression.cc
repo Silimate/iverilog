@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2011-2026 Stephen Williams (steve@icarus.com)
  * Copyright CERN 2012-2015 / Stephen Williams (steve@icarus.com),
  * Copyright CERN 2016
  * @author Maciej Suminski (maciej.suminski@cern.ch)
@@ -76,12 +76,15 @@ ExpAttribute::~ExpAttribute()
 list<Expression*>*ExpAttribute::clone_args() const {
       list<Expression*>*new_args = NULL;
 
+      ivl_assert(*this, !args_);
+/* This is not a proper implementation so assert for now.
       if(args_) {
 	    for(list<Expression*>::iterator it = args_->begin();
                     it != args_->end(); ++it) {
 		new_args->push_back((*it)->clone());
             }
       }
+*/
 
       return new_args;
 }
@@ -913,7 +916,7 @@ double ExpTime::to_fs() const
 
 ExpRange::ExpRange(Expression*left_idx, Expression*right_idx, range_dir_t dir)
 : left_(left_idx), right_(right_idx), direction_(dir), range_expr_(false),
-    range_base_(NULL)
+    range_base_(NULL), range_reverse_(false)
 {
 }
 

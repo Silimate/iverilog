@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 1998-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -228,7 +228,7 @@ verinum::verinum(double val, bool)
 
 	/* Round to the nearest integer now, as this may increase the
 	   number of bits we need to allocate. */
-      val = round(val);
+      val = std::round(val);
 
 	/* Get the exponent and fractional part of the number. */
       fraction = frexp(val, &exponent);
@@ -254,7 +254,6 @@ verinum::verinum(double val, bool)
 
       if (nwords == 0) {
 	    unsigned long bits = (unsigned long) fraction;
-	    fraction = fraction - (double) bits;
 	    for (unsigned idx = 0; idx < nbits_; idx += 1) {
 		  bits_[idx] = (bits&1) ? V1 : V0;
 		  bits >>= 1;
@@ -1479,9 +1478,10 @@ verinum operator / (const verinum&left, const verinum&right)
 		  long r = right.as_long();
 		  bool overflow = (l == LONG_MIN) && (r == -1);
 		  long v = overflow ? LONG_MIN : l / r;
+		  unsigned long uv = v;
 		  for (unsigned idx = 0 ;  idx < use_len ;  idx += 1) {
-			result.set(idx,  (v & 1)? verinum::V1 : verinum::V0);
-			v >>= 1;
+			result.set(idx,  (uv & 1)? verinum::V1 : verinum::V0);
+			uv >>= 1;
 		  }
 
 	    } else {

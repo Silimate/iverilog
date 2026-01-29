@@ -1,7 +1,7 @@
 #ifndef IVL_vpi_priv_H
 #define IVL_vpi_priv_H
 /*
- * Copyright (c) 2001-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2001-2026 Stephen Williams (steve@icarus.com)
  * Copyright (c) 2016 CERN Michele Castellana (michele.castellana@cern.ch)
  *
  *    This source code is free software; you can redistribute it
@@ -124,6 +124,7 @@ class __vpiHandle {
 
       virtual int get_type_code(void) const =0;
       virtual int vpi_get(int code);
+      virtual int64_t vpi_get64(int code);
       virtual char* vpi_get_str(int code);
 
       virtual void vpi_get_value(p_vpi_value val);
@@ -352,6 +353,7 @@ extern void vpip_make_root_iterator(class __vpiHandle**&table,
  */
 struct __vpiSignal : public __vpiHandle {
       int vpi_get(int code) override;
+      int64_t vpi_get64(int code) override;
       char* vpi_get_str(int code) override;
       void vpi_get_value(p_vpi_value val) override;
       vpiHandle vpi_put_value(p_vpi_value val, int flags) override;
@@ -620,6 +622,10 @@ class __vpiNamedEvent : public __vpiHandle {
     public:
       __vpiNamedEvent(__vpiScope*scope, const char*name);
       ~__vpiNamedEvent() override;
+
+      __vpiNamedEvent(const __vpiNamedEvent&) = delete;
+      __vpiNamedEvent& operator=(const __vpiNamedEvent&) = delete;
+
       int get_type_code(void) const override;
       __vpiScope*get_scope(void) const { return scope_; }
       int vpi_get(int code) override;
@@ -974,7 +980,7 @@ struct __vpiBinaryConst : public __vpiHandle {
 };
 
 vpiHandle vpip_make_binary_const(unsigned wid, const char*bits);
-vpiHandle vpip_make_binary_param(char*name, const vvp_vector4_t&bits,
+vpiHandle vpip_make_binary_param(const char*name, const vvp_vector4_t&bits,
 				 bool signed_flag, bool local_flag,
 				 long file_idx, long lineno);
 

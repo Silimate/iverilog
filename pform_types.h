@@ -1,7 +1,7 @@
 #ifndef IVL_pform_types_H
 #define IVL_pform_types_H
 /*
- * Copyright (c) 2007-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 2007-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -373,7 +373,7 @@ struct string_type_t : public data_type_t {
 
 struct class_type_t : public data_type_t {
 
-      inline explicit class_type_t(perm_string n) : name(n) { }
+      inline explicit class_type_t(perm_string n) : name(n) { virtual_class = false; }
 
       void pform_dump(std::ostream&out, unsigned indent) const override;
       void pform_dump_init(std::ostream&out, unsigned indent) const;
@@ -451,7 +451,7 @@ struct pform_scoped_name_t {
       pform_scoped_name_t() = default;
       pform_scoped_name_t(PPackage *p, const pform_name_t &n) : package(p),
 							        name(n) {}
-      pform_scoped_name_t(const pform_name_t &n) : name(n) {}
+      explicit pform_scoped_name_t(const pform_name_t &n) : name(n) {}
 
       const name_component_t& back() const { return name.back(); }
       size_t size() const { return name.size(); }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999-2025 Stephen Williams (steve@icarus.com)
+ * Copyright (c) 1999-2026 Stephen Williams (steve@icarus.com)
  *
  *    This source code is free software; you can redistribute it
  *    and/or modify it in source code form under the terms of the GNU
@@ -442,7 +442,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
       char *escname;
       const char *ident;
       fstHandle new_ident;
-      int nexus_id;
+      int64_t nexus_id;
       unsigned size;
       PLI_INT32 item_type;
 
@@ -557,7 +557,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 	    } else escname = strdup(name);
 
 	      /* Some signals can have an alias so handle that. */
-	    nexus_id = vpi_get(_vpiNexusId, item);
+	    nexus_id = vpi_get64(_vpiNexusId, item);
 
 	    ident = 0;
 	    if (nexus_id) ident = find_nexus_ident(nexus_id);
@@ -657,10 +657,10 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 	  case vpiNamedFork:
 
 	    if (depth > 0) {
-		  char *instname;
+		  const char *instname;
 		  char *defname = NULL;
 		  /* list of types to iterate upon */
-		  static int types[] = {
+		  static const int types[] = {
 			/* Value */
 			vpiNamedEvent,
 			vpiNet,
