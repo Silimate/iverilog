@@ -30,6 +30,7 @@ jobs:
               apk add --no-cache \
                 build-base autoconf bison flex gperf readline-dev bzip2-dev \
                 perl python3 git
+              git config --global --add safe.directory /src
               autoconf
               ./configure --prefix=/usr/local
               make -j$(nproc)
