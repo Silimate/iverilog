@@ -80,7 +80,7 @@ duplicateValueTernary:class_type.cc:268
 // cppcheck is wrong this can be true or false
 knownConditionTrueFalse:vthread.cc:2986
 knownConditionTrueFalse:vpi_priv.cc:681
-knownConditionTrueFalse:vpi_priv.cc:1979
+knownConditionTrueFalse:vpi_priv.cc:2030
 
 // cppcheck is wrong this is already const
 constParameterPointer:vpi_tasks.cc:259

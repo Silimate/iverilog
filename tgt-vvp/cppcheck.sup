@@ -41,6 +41,7 @@ nullPointerOutOfMemory:vvp_scope.c:1746      // malloc @ 1684
 nullPointerOutOfMemory:vvp_scope.c:1757      // malloc @ 1684
 nullPointerOutOfMemory:vvp_scope.c:1764      // malloc @ 1684
 nullPointerOutOfMemory:vvp_scope.c:1991      // calloc @ 1989
+nullPointerOutOfMemory:vvp_scope.c:2028      // calloc @ 1989
 nullPointerOutOfMemory:vvp_scope.c:2062      // calloc @ 2060
 nullPointerOutOfMemory:vvp_scope.c:2077      // calloc @ 2060
 nullPointerArithmeticOutOfMemory:stmt_assign.c:216  // calloc @ 619

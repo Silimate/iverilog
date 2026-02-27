@@ -9,6 +9,9 @@ incorrectStringBooleanError:expression_stream.cc:158
 // cppcheck is wrong this cannot be a const
 constVariableReference:library.cc:255
 
+// We check memory allocation with valgrind
+unsafeClassCanLeak:libmisc/StringHeap.h:79
+
 // We only use a StringHeap or a StringHepLex
 duplInheritedMember:libmisc/StringHeap.h:99
 duplInheritedMember:libmisc/StringHeap.h:100

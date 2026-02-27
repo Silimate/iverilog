@@ -4,6 +4,9 @@ nullPointerArithmeticOutOfMemory
 nullPointerOutOfMemory
 memleakOnRealloc
 
+// We check memory allocation with valgrind
+nullPointer:sys_display.c:931
+
 // Skip asctime() obsolete for now.
 asctimeCalled:sys_fst.c:381
 asctimeCalled:sys_vcd.c:443

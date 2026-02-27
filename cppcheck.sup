@@ -44,6 +44,11 @@ thisSubtraction:netlist.h:5318
 // debugger_release
 knownConditionTrueFalse:main.cc:931
 
+// These should be checked, but are not real issues
+knownConditionTrueFalse:elaborate.cc:7621
+knownConditionTrueFalse:elab_sig.cc:271
+knownConditionTrueFalse:elab_sig.cc:338
+
 // Yes, it's a duplicate
 duplicateCondition:elaborate.cc:7672
 
@@ -52,6 +57,12 @@ useStlAlgorithm:map_named_args.cc:38
 
 // The condition is always true at least once based on the previous assertion
 derefInvalidIterator:netmisc.cc:420
+
+// By convention we put statics at the top scope.
+variableScope:t-dll.cc:2377
+
+// We check memory allocation with valgrind
+unsafeClassCanLeak:libmisc/StringHeap.h:79
 
 // We only use a StringHeap or a StringHepLex
 duplInheritedMember:libmisc/StringHeap.h:99
