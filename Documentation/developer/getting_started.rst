@@ -107,7 +107,7 @@ V0.9 file with the V0.8 run time).
 
   --enable-libvvp
 
-The vvp progam is built as a small stub linked to a shared library,
+The vvp program is built as a small stub linked to a shared library,
 libvvp.so, that may be linked with other programs so that they can host
 a vvp simulation.
 
@@ -179,13 +179,21 @@ example:
 .. code-block:: console
 
   % cd ivtest
-  % ./vvp_reg.pl --strict
+  % ./vvp_reg.pl
+  % ./vvp_reg.py
+  % ./vpi_reg.pl
 
 will run all the regression tests for the simulation engine. (This is what
-most people will want to do.) You should rerun this test before submitting
+most people will want to do.) You should rerun these tests before submitting
 patches to the developers. Also, if you are adding a new feature, you should
 add test programs to the regression test suite to validate your new feature
-(or bug fix.)
+(or bug fix.). The python script is the preferred method to add new tests.
+
+All of these scripts take other options to test various configurations. What
+options are supported can be found by using the ``-h/--help`` argument. There
+is also a separate ``vlog95_reg.pl`` script for testing the vlog95 translation
+of the original tests. This is integrated into the existing Python test script
+for the new tests.
 
 Note that pull requests will be required to pass these regression tests before
 being merged.

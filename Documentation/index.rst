@@ -12,6 +12,7 @@ Welcome to the documentation for Icarus Verilog.
    :maxdepth: 2
    :caption: Contents:
 
+   releases/index
    usage/index
    targets/index
    developer/index

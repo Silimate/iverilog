@@ -1,4 +1,3 @@
-
 Viewing Waveforms
 =================
 
@@ -6,17 +5,17 @@ To view waveforms, either GTKWave or Surfer can be used.
 
 GTKWave is a waveform viewer based on the GTK library. This viewer supports
 VCD, FST, LXT, and LXT2 formats for waveform dumps. GTKWave is available on GitHub
-`here <https://github.com/gtkwave/gtkwave>`_. Most Linux distributions already
+`here <https://github.com/gtkwave/gtkwave>`__. Most Linux distributions already
 include gtkwave prepackaged and there are binaries for Windows available.
 
 .. image:: GTKWave_Example2.png
 
 Surfer is a waveform viewer based on the Rust egui library. This viewer supports
 VCD and FST formats for waveform dumps. Surfer is available on GitLab
-`here <https://gitlab.com/surfer-project/surfer>`_. It runs on Windows, Linux,
-and MacOS, but can also run in a `web browser <https://app.surfer-project.org/>`_
+`here <https://gitlab.com/surfer-project/surfer>`__. It runs on Windows, Linux,
+and MacOS, but can also run in a `web browser <https://app.surfer-project.org/>`__
 and there is a VS Code
-`extension <https://marketplace.visualstudio.com/items?itemName=surfer-project.surfer>`_.
+`extension <https://marketplace.visualstudio.com/items?itemName=surfer-project.surfer>`__.
 
 Generating waveform dump files for viewing
 ------------------------------------------

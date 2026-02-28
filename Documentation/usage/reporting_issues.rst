@@ -5,7 +5,7 @@ Reporting Issues
 The developers of and contributers to Icarus Verilog use github to track
 issues and to create patches for the product. If you believe you have found a
 problem, use the Issues tracker at the
-`Icarus Verilog github page <https://github.com/steveicarus/iverilog>`_.
+`Icarus Verilog github page <https://github.com/steveicarus/iverilog>`__.
 
 You may browse the bugs database for existing
 bugs that may be related to yours. You might find that your bug has
@@ -13,7 +13,7 @@ already been fixed in a later release or snapshot. If that's the case,
 then you are set.
 
 On the main page, you will find a row of selections near the top. Click the
-`Issues <https://github.com/steveicarus/iverilog/issues>`_ link to get to the
+`Issues <https://github.com/steveicarus/iverilog/issues>`__ link to get to the
 list of issues, open and closed. You will find a friendly green button where
 you can create a new issue. You will be asked to create a title for your
 issue, and to write a detailed description of your issue. Please include

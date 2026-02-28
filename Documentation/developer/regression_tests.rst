@@ -54,11 +54,6 @@ This describes the kind of test to run. The valid values are:
   that succeeds execute it using the vvp command. If there is no gold file
   specified, then look for an output line with the "PASSED" string.
 
-* **normal-vlog95** - This is similar to the normal case, but uses
-  the -tvlog95 target in a first pass to generate simplified verilog, then a
-  regular iverilog command with the -tvvp target to generate the actual
-  executable. This tests the -tvlog95 target.
-
 * **NI** - Mark the test as not implemented. The test will be skipped without
   running or reporting an error.
 
@@ -67,6 +62,9 @@ This describes the kind of test to run. The valid values are:
 
 * **EF** - Compile and run, but expect the run time to fail. This means the
   run time program must return an error exit.
+
+* **TE** - This is specific to testing the vlog95 conversion and indicates the
+  translated code failed to compile.
 
 gold (optional)
 ^^^^^^^^^^^^^^^
@@ -123,3 +121,9 @@ vvp-args-extended (optional)
 If this is specified, it is a lost of strings that are passed as arguments to
 the vvp command. These are extended arguments, and are placed after the vvp
 input file that is being run. This is where you place things like plusargs.
+
+strict, force-sv or vlog95 (optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Any of these can be used to create overrides for the type, gold or
+iverilog-args when the given test type is run.
