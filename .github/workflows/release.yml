@@ -29,12 +29,43 @@ jobs:
               set -ex
               apk add --no-cache \
                 build-base autoconf bison flex gperf readline-dev bzip2-dev \
-                perl python3 git
+                perl python3 git patchelf
               git config --global --add safe.directory /src
               autoconf
               ./configure --prefix=/usr/local
               make -j$(nproc)
               make DESTDIR=/tmp/install install
+
+              # Bundle shared library dependencies and set RPATHs
+              STAGE=/tmp/install/usr/local
+              mkdir -p "$STAGE/lib"
+
+              copy_deps() {
+                for f in "$@"; do
+                  [ -f "$f" ] || continue
+                  ldd "$f" 2>/dev/null | awk "/=>/ {print \$3}" | while read -r lib; do
+                    [ -f "$lib" ] || continue
+                    base=$(basename "$lib")
+                    case "$base" in ld-musl-*|libc.musl-*) continue ;; esac
+                    [ -f "$STAGE/lib/$base" ] || cp "$lib" "$STAGE/lib/$base"
+                  done
+                done
+              }
+
+              copy_deps "$STAGE"/bin/*
+              copy_deps "$STAGE"/lib/ivl/*
+              copy_deps "$STAGE"/lib/*.so*
+
+              for f in "$STAGE"/bin/*; do
+                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN/../lib" "$f" 2>/dev/null || true
+              done
+              for f in "$STAGE"/lib/ivl/*; do
+                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN/.." "$f" 2>/dev/null || true
+              done
+              for f in "$STAGE"/lib/*.so*; do
+                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN" "$f" 2>/dev/null || true
+              done
+
               cd /tmp/install
               tar czf /src/iverilog-anylinux-amd64.tar.gz .
             '
