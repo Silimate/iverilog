@@ -18,7 +18,7 @@
 #                 (Push the commits and tag to the remote repository.)
 #
 # For a major release, create and switch to the new release branch before
-# running this script.
+# running this script. See: scripts/CREATE_BRANCH.sh
 
 if [ $# -ne 2 ] ; then
     echo "Usage: CREATE_RELEASE.sh <major-number> <minor-number>"

@@ -56,8 +56,9 @@ if ($#ARGV != -1) {
 #
 my $sys = $ENV{MSYSTEM} ? 'msys2' : 'other';
 my $ver = &get_ivl_version($sfx);
+my $opt = $sfx ? ", suffix: $sfx" : "";
 my $msg = $with_valg ? " (with valgrind)" : "";
-print ("Running VPI tests for Icarus Verilog version: $ver$msg.\n");
+print ("Running VPI tests for Icarus Verilog version: $ver$opt$msg.\n");
 print "-" x 76 . "\n";
 &read_regression_list;
 my $failed = &execute_regression;

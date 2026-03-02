@@ -10,7 +10,7 @@ AC_DEFUN([AX_ENABLE_SUFFIX],
                                         [Use/set the installation command suffix])],
                [true],[enable_suffix=no])
 if test X$enable_suffix = Xyes; then
-  install_suffix='-0.10'
+  install_suffix='-dev'
 elif test X$enable_suffix = Xno; then
   install_suffix=''
 else
