@@ -12,7 +12,7 @@
  * versions and the like.
  */
 // # define VERSION_EXTRA   " (devel)"
-# define VERSION_EXTRA
+# define VERSION_EXTRA   ""
 
 # define VERSION_STRINGIFY(x) #x
 # define VERSION_STR(a,b,extra) VERSION_STRINGIFY(a.b) extra
