@@ -1,4 +1,4 @@
-:ivl_version "14.0" "vec4-stack";
+:ivl_version "13.0" "vec4-stack";
 :vpi_module "system";
 
 ; Copyright (c) 2001-2026  Stephen Williams (steve@icarus.com)
