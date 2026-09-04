@@ -22,13 +22,12 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install bison
-        pip3 install --break-system-packages docopt
+        brew bundle install
 
     - name: Build, check and install
       run: |
-        export PATH="/usr/local/opt/bison/bin:$PATH"
-        autoconf
+        eval "$(brew bundle env)"
+        autoreconf -vfi
         ./configure --enable-libveriuser
         make -j$(nproc) check
         sudo make install

@@ -101,7 +101,7 @@ jobs:
       - name: Full Test
         run: |
           pip3 install --find-links=$PWD/dist/ iverilog
-          bash .github/test.sh
+          bash .github/test.sh no-pli1
       - uses: actions/upload-artifact@v7
         with:
           name: python-wheels-${{ matrix.os.name }}-${{ matrix.os.arch }}
