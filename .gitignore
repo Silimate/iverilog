@@ -119,3 +119,8 @@ dep
 # Silimate added
 /build/
 *.dSYM
+/.venv
+/venv
+/pfx
+__pycache__
+/wheelhouse

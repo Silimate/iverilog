@@ -69,6 +69,9 @@ const char HELP[] =
 # include  <libiberty.h>
 #endif
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h> // _NSGetExecutablePath
+#endif
 #include  <fcntl.h>
 
 #ifdef HAVE_GETOPT_H
@@ -1101,6 +1104,9 @@ static void print_runtime_paths(void) {
 	printf("includedir: %s\n", IVL_INCLUDE_INSTALL_DIR);
 }
 
+// SILIMATE: portable binary versions
+extern void print_runtime_paths_portable(const char *);
+
 int main(int argc, char **argv)
 {
       int e_flag = 0;
@@ -1258,7 +1264,8 @@ int main(int argc, char **argv)
 		  break;
 
 		case 'R':
-		  print_runtime_paths();
+		  // SILIMATE: use portable version
+		  print_runtime_paths_portable(ivl_root);
 		  return 0;
 
 		case 'S':

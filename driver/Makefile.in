@@ -35,6 +35,7 @@ pdfdir = @docdir@
 dllib=@DLLIB@
 
 CC = @CC@
+CXX = @CXX@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
@@ -53,7 +54,7 @@ CPPFLAGS = $(INCLUDE_PATH) @CPPFLAGS@ @DEFS@
 CFLAGS = @WARNING_FLAGS@ @WARNING_FLAGS_CC@ @CFLAGS@
 LDFLAGS = @LDFLAGS@
 
-O = main.o substit.o cflexor.o cfparse.o
+O = main.o substit.o cflexor.o cfparse.o driver_portable.o
 
 all: dep iverilog@EXEEXT@ iverilog.man
 
@@ -83,7 +84,7 @@ dep:
 	mkdir dep
 
 iverilog@EXEEXT@: $O
-	$(CC) $(LDFLAGS) $O -o iverilog@EXEEXT@ @EXTRALIBS@
+	$(CXX) $(LDFLAGS) $O -o iverilog@EXEEXT@ @EXTRALIBS@
 
 cflexor.c: $(srcdir)/cflexor.lex
 	$(LEX) -s -t $< > $@
@@ -92,6 +93,10 @@ cflexor.c: $(srcdir)/cflexor.lex
 cfparse%c cfparse%h: $(srcdir)/cfparse%y
 	$(YACC) --verbose -t -p cf -d -o cfparse.c $<
 
+%.o: %.cc
+	$(CXX) -std=c++17 $(CPPFLAGS) $(CFLAGS) @DEPENDENCY_FLAG@ -DLIB_DIR="\"$(realpath $(DESTDIR)/$(includedir))\"" -DIVL_INCLUDE_INSTALL_DIR="\"$(realpath $(DESTDIR)/$(includedir))\"" -c $< -o $*.o
+	mv $*.d dep
+	
 %.o: %.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) @DEPENDENCY_FLAG@ -c $< -o $*.o
 	mv $*.d dep

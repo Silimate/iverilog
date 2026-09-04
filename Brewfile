@@ -1,0 +1,6 @@
+brew "flex"
+brew "bison"
+brew "gperf"
+brew "libtool"
+brew "autoconf"
+brew "bzip2"
