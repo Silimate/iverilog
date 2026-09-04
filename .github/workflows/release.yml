@@ -98,15 +98,22 @@ jobs:
           # smoke test - only run full functionality tests once
           # (takes 3 minutes per target python version)
           CIBW_TEST_COMMAND: (cd {project} && bash wheel_build/smoke_test.sh)
-      - name: Full Test
-        run: |
-          pip3 install --find-links=$PWD/dist/ iverilog
-          bash .github/test.sh no-pli1
       - uses: actions/upload-artifact@v7
         with:
           name: python-wheels-${{ matrix.os.name }}-${{ matrix.os.arch }}
           path: dist/*
           if-no-files-found: error
+      - name: Full Test
+        id: full_test
+        run: |
+          pip3 install --find-links=$PWD/dist/ iverilog
+          bash .github/test.sh no-pli1
+      - uses: actions/upload-artifact@v7
+        if: always() && (steps.full_test.outcome != 'cancelled' && steps.full_test.outcome != 'skipped')
+        with:
+          name: python-wheels-${{ matrix.os.name }}-${{ matrix.os.arch }}-logs
+          path: ivtest/*log
+          
   release:
     runs-on: ubuntu-24.04
     name: Create release
