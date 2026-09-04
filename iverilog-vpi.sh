@@ -27,12 +27,13 @@
 __HERE__="$(CDPATH=; cd -- "$(dirname -- "$0")" && pwd)"
 RESOLVED_INCLUDE_DIR=@INCLUDEDIR@
 RESOLVED_LIBDIR=@LIBDIR@
-if command -v $__HERE__/iverilog 2>&1 > /dev/null; then
-    potential_include_dir="$($__HERE__/iverilog -R | grep "includedir: " | awk '{ print $2 }')/iverilog"
+IVERILOG_BIN="$__HERE__/iverilog"
+if command -v $IVERILOG_BIN 2>&1 > /dev/null; then
+    potential_include_dir="$($IVERILOG_BIN -R | grep "includedir: " | sed "s/includedir: //")/iverilog"
     if [ -d "$potential_include_dir" ]; then
         RESOLVED_INCLUDE_DIR=$potential_include_dir
     fi
-    potential_lib_dir="$($__HERE__/iverilog -R | grep "libdir: " | awk '{ print $2 }')"
+    potential_lib_dir="$($IVERILOG_BIN -R | grep "libdir: " | sed "s/libdir: //")"
     if [ -d "$potential_lib_dir" ]; then
         RESOLVED_LIBDIR=$potential_lib_dir
     fi

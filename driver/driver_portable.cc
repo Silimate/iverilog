@@ -45,7 +45,7 @@ extern "C" void print_runtime_paths_portable(const char *ivl_root) {
     if (fs::exists(lib_dir)) {
         printf("libdir: %s\n", lib_dir.c_str());
     } else {
-        printf("libdir: %s\n", LIB_DIR);
+        printf("libdir: %s\n", IVL_LIB);
     }
     
 }

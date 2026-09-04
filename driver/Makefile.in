@@ -94,7 +94,7 @@ cfparse%c cfparse%h: $(srcdir)/cfparse%y
 	$(YACC) --verbose -t -p cf -d -o cfparse.c $<
 
 %.o: %.cc
-	$(CXX) -std=c++17 $(CPPFLAGS) $(CFLAGS) @DEPENDENCY_FLAG@ -DLIB_DIR="\"$(realpath $(DESTDIR)/$(includedir))\"" -DIVL_INCLUDE_INSTALL_DIR="\"$(realpath $(DESTDIR)/$(includedir))\"" -c $< -o $*.o
+	$(CXX) -std=c++17 $(CPPFLAGS) $(CFLAGS) @DEPENDENCY_FLAG@ -DIVL_LIB='"@libdir@"' -DIVL_INCLUDE_INSTALL_DIR="\"$(realpath $(DESTDIR)/$(includedir))\"" -c $< -o $*.o
 	mv $*.d dep
 	
 %.o: %.c

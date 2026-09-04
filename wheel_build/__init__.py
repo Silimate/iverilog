@@ -138,12 +138,12 @@ def get_metadata_files():
                 ("Version", PROJECT_VERSION),
                 (
                     "Summary",
-                    "Superset of STA for operator resize for meeting timing",
+                    "Verilog Compiler and Simulator",
                 ),
                 ("Description-Content-Type", "text/markdown"),
                 ("Classifier", "Programming Language :: Python :: 3"),
                 ("Requires-Python", ">=3.8"),
-                ("License", "MIT"),
+                ("License", "GPLv2"),
             ],
             long_description,
         ),
@@ -167,6 +167,15 @@ def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
 
 
 def _ensure_autoconf_273(d):
+    """
+    autoconf 2.72, included in AlmaLinux 8 packages, fails to process one or
+    more AC macros
+
+    meanwhile, on macOS, it is generally preferred to use the brew version as-is
+    (2.73 straight from the GNU sources fails)
+
+    this installs an ad-hoc version of autoconf as-needed
+    """
     try:
         version_rx = re.compile(r"autoconf\s*\(.+\) (\d+\.\d+)")
         version_str = subprocess.check_output(
@@ -177,7 +186,7 @@ def _ensure_autoconf_273(d):
             version = vparse(match[1])
             if version >= vparse("2.73"):
                 return None
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, FileNotFoundError):
         pass
 
     urllib.request.urlretrieve(AUTOCONF_URL, d / "autoconf.tar.gz")
