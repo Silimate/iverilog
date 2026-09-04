@@ -13,6 +13,11 @@ AC_CONFIG_HEADERS([tgt-pcb/pcb_config.h])
 
 AC_CANONICAL_HOST
 dnl Checks for programs.
+
+dnl SILIMATE: c23 compile option gets propagated to iverilog-vpi which breaks
+dnl on systems as recent as Ubuntu 24.04
+ac_cv_prog_cc_c23=no
+
 AC_PROG_CC
 AX_PROG_CC_FOR_BUILD
 AC_PREREQ([2.62])

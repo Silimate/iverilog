@@ -204,7 +204,7 @@ def _ensure_autoconf_273(d):
     src_root = d / "autoconf-src" / "autoconf-2.73"
 
     subprocess.check_call(
-        ["./configure", f"--prefix={d / 'autoconf'}"],
+        ["./configure", f"--prefix={d / 'autoconf'}",],
         cwd=src_root,
     )
     subprocess.check_call(
