@@ -1,0 +1,7 @@
+[build-system]
+requires = [
+	"wheel",
+	"packaging",
+]
+backend-path = ["."]
+build-backend = "wheel_build"

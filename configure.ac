@@ -13,6 +13,11 @@ AC_CONFIG_HEADERS([tgt-pcb/pcb_config.h])
 
 AC_CANONICAL_HOST
 dnl Checks for programs.
+
+dnl SILIMATE: c23 compile option gets propagated to iverilog-vpi which breaks
+dnl on systems as recent as Ubuntu 24.04
+ac_cv_prog_cc_c23=no
+
 AC_PROG_CC
 AX_PROG_CC_FOR_BUILD
 AC_PREREQ([2.62])
@@ -104,12 +109,12 @@ AS_IF( [test "x$with_m32" = xyes],
     [])
 
 CFLAGS="$CTARGETFLAGS $CFLAGS"
-# Cygwin does not declare strdup() for C++ 11 by default so use gnu++11
+# Cygwin does not declare strdup() for C++ 17 by default so use gnu++11
 # to expose the declaration.
-decl_cxx_std="-std=c++11"
+decl_cxx_std="-std=c++17"
 case "${host}" in
   *-*-cygwin*)
-    decl_cxx_std="-std=gnu++11"
+    decl_cxx_std="-std=gnu++17"
     ;;
 esac
 CXXFLAGS="$CTARGETFLAGS $CXXFLAGS $decl_cxx_std"

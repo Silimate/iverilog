@@ -1,305 +1,154 @@
-name: Release (anylinux amd64 + manylinux2014 amd64 + macOS arm64)
+name: "Release (anylinux amd64 + manylinux_2_28 amd64 + macOS arm64)"
 
 on:
   push:
     branches:
       - master
+  pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  # Behavior:
+  # - Group all pull requests: latest push cancels previous ones
+  # - Group all branches: run serially
+  group: >
+    wheel-${{
+      (github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number)) ||
+      ((github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'release') ||
+      ''
+    }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
-    name: Build anylinux amd64 tarball (musl)
-
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: '${{ steps.info.outputs.version }}'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Build tarball in Alpine container
+      - id: info
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/src" \
-            -w /src \
-            --platform linux/amd64 \
-            alpine:3.20 sh -c '
-              set -ex
-              apk add --no-cache \
-                build-base autoconf bison flex gperf readline-dev bzip2-dev \
-                perl python3 git patchelf
-              git config --global --add safe.directory /src
-              autoconf
-              ./configure --prefix=/usr/local
-              make -j$(nproc)
-              make DESTDIR=/tmp/install install
-
-              # Bundle shared library dependencies and set RPATHs
-              STAGE=/tmp/install/usr/local
-              mkdir -p "$STAGE/lib"
-
-              copy_deps() {
-                for f in "$@"; do
-                  [ -f "$f" ] || continue
-                  ldd "$f" 2>/dev/null | awk "/=>/ {print \$3}" | while read -r lib; do
-                    [ -f "$lib" ] || continue
-                    base=$(basename "$lib")
-                    case "$base" in ld-musl-*|libc.musl-*) continue ;; esac
-                    [ -f "$STAGE/lib/$base" ] || cp "$lib" "$STAGE/lib/$base"
-                  done
-                done
-              }
-
-              copy_deps "$STAGE"/bin/*
-              copy_deps "$STAGE"/lib/ivl/*
-              copy_deps "$STAGE"/lib/*.so*
-
-              for f in "$STAGE"/bin/*; do
-                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN/../lib" "$f" 2>/dev/null || true
-              done
-              for f in "$STAGE"/lib/ivl/*; do
-                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN/.." "$f" 2>/dev/null || true
-              done
-              for f in "$STAGE"/lib/*.so*; do
-                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN" "$f" 2>/dev/null || true
-              done
-
-              cd /tmp/install
-              tar czf /src/iverilog-anylinux-amd64.tar.gz .
-            '
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: iverilog-anylinux-amd64
-          path: iverilog-anylinux-amd64.tar.gz
-
-  build-manylinux:
-    runs-on: ubuntu-latest
-    name: Build manylinux2014 amd64 tarball (glibc 2.17+)
-
+          BASE_VER=$(bash wheel_build/get_version.sh)
+          COUNTER=0
+          CURRENT_VER=$BASE_VER
+          while gh release view "silimate-v$CURRENT_VER" > /dev/null 2>&1; do
+            COUNTER=$(expr $COUNTER + 1)
+            CURRENT_VER=$BASE_VER.post$COUNTER
+          done
+          echo "Found unused version $CURRENT_VER."
+          echo "version=$CURRENT_VER" >> $GITHUB_OUTPUT
+  wheel-build:
+    needs: [version]
+    strategy:
+      matrix:
+        os:
+          [
+            {
+              name: "ubuntu",
+              runner: "ubuntu-24.04",
+              arch: "x86_64",
+            },
+            {
+              name: "macos",
+              runner: "macos-15",
+              arch: "arm64",
+            },
+          ]
+    name: Build and Test Binary Wheels | ${{ matrix.os.name }}
+    runs-on: ${{ matrix.os.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Build tarball in CentOS 7 container
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/src" \
-            -w /src \
-            --platform linux/amd64 \
-            centos:7 bash -c '
-              set -ex
-
-              sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
-              sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
-              sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
-
-              yum install -y centos-release-scl epel-release
-              sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo
-              sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo
-              sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo
-
-              yum install -y devtoolset-11-gcc-c++ make autoconf flex gperf \
-                readline-devel bzip2-devel perl python3 git patchelf
-
-              source /opt/rh/devtoolset-11/enable
-
-              # Build bison >= 3.x from source (CentOS 7 ships 2.x)
-              curl -L https://ftp.gnu.org/gnu/bison/bison-3.8.2.tar.gz | tar -xzC /tmp
-              cd /tmp/bison-3.8.2 && ./configure && make -j$(nproc) && make install
-              cd /src
-
-              git config --global --add safe.directory /src
-
-              autoconf
-              ./configure --prefix=/usr/local
-              make -j$(nproc)
-              make DESTDIR=/tmp/install install
-
-              STAGE=/tmp/install/usr/local
-              mkdir -p "$STAGE/lib"
-
-              copy_deps() {
-                for f in "$@"; do
-                  [ -f "$f" ] || continue
-                  ldd "$f" 2>/dev/null | awk "/=>/ {print \$3}" | while read -r lib; do
-                    [ -f "$lib" ] || continue
-                    base=$(basename "$lib")
-                    case "$base" in ld-linux*|libc.so*|libdl*|libpthread*|librt*|libm.so*) continue ;; esac
-                    [ -f "$STAGE/lib/$base" ] || cp "$lib" "$STAGE/lib/$base"
-                  done
-                done
-              }
-
-              copy_deps "$STAGE"/bin/*
-              copy_deps "$STAGE"/lib/ivl/*
-              copy_deps "$STAGE"/lib/*.so*
-
-              for f in "$STAGE"/bin/*; do
-                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN/../lib" "$f" 2>/dev/null || true
-              done
-              for f in "$STAGE"/lib/ivl/*; do
-                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN/.." "$f" 2>/dev/null || true
-              done
-              for f in "$STAGE"/lib/*.so*; do
-                [ -f "$f" ] && patchelf --set-rpath "\$ORIGIN" "$f" 2>/dev/null || true
-              done
-
-              cd /tmp/install
-              tar czf /src/iverilog-manylinux2014-amd64.tar.gz .
-            '
-
-      - uses: actions/upload-artifact@v4
+          submodules: true
+      - if: ${{ matrix.os.name == 'macos' && matrix.os.arch == 'arm64' }}
+        name: "[macOS/arm64] Install Python 3.8 (see: https://cibuildwheel.pypa.io/en/v3.4.1/faq/#macos-building-cpython-38-wheels-on-arm64)"
+        uses: actions/setup-python@v5
         with:
-          name: iverilog-manylinux2014-amd64
-          path: iverilog-manylinux2014-amd64.tar.gz
-
-  build-macos:
-    runs-on: macos-14
-    name: Build macOS arm64 tarball
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install dependencies
+          python-version: 3.8
+      - if: ${{ matrix.os.name == 'macos' }}
+        # install various dependencies via brew
         run: |
-          brew install autoconf bison flex gperf readline bzip2
-
-      - name: Build and package tarball
-        run: |
-          set -ex
-          export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
-          export LDFLAGS="-L$(brew --prefix readline)/lib -L$(brew --prefix bzip2)/lib"
-          export CPPFLAGS="-I$(brew --prefix readline)/include -I$(brew --prefix bzip2)/include"
-
-          autoconf
-          ./configure --prefix=/usr/local
-          make -j$(sysctl -n hw.ncpu)
-          make DESTDIR=/tmp/install install
-
-          STAGE=/tmp/install/usr/local
-          mkdir -p "$STAGE/lib"
-
-          copy_deps() {
-            for f in "$@"; do
-              [ -f "$f" ] || continue
-              otool -L "$f" 2>/dev/null | awk 'NR>1 {print $1}' | while read -r lib; do
-                [ -f "$lib" ] || continue
-                base=$(basename "$lib")
-                case "$base" in libSystem*|libc++*|libobjc*) continue ;; esac
-                case "$lib" in /usr/lib/*|/System/*) continue ;; esac
-                [ -f "$STAGE/lib/$base" ] || cp "$lib" "$STAGE/lib/$base"
-              done
-            done
-          }
-
-          copy_deps "$STAGE"/bin/*
-          copy_deps "$STAGE"/lib/ivl/*
-          copy_deps "$STAGE"/lib/*.dylib
-
-          for f in "$STAGE"/bin/*; do
-            [ -f "$f" ] || continue
-            install_name_tool -add_rpath "@executable_path/../lib" "$f" 2>/dev/null || true
-            for lib in "$STAGE"/lib/*.dylib; do
-              [ -f "$lib" ] || continue
-              base=$(basename "$lib")
-              install_name_tool -change "$(otool -L "$f" | grep "$base" | awk '{print $1}')" "@rpath/$base" "$f" 2>/dev/null || true
-            done
-          done
-          for f in "$STAGE"/lib/ivl/*; do
-            [ -f "$f" ] || continue
-            install_name_tool -add_rpath "@executable_path/.." "$f" 2>/dev/null || true
-            for lib in "$STAGE"/lib/*.dylib; do
-              [ -f "$lib" ] || continue
-              base=$(basename "$lib")
-              install_name_tool -change "$(otool -L "$f" | grep "$base" | awk '{print $1}')" "@rpath/$base" "$f" 2>/dev/null || true
-            done
-          done
-          for f in "$STAGE"/lib/*.dylib; do
-            [ -f "$f" ] || continue
-            install_name_tool -id "@rpath/$(basename "$f")" "$f" 2>/dev/null || true
-          done
-
-          cd /tmp/install
-          tar czf "${{ github.workspace }}/iverilog-macos-arm64.tar.gz" .
-
-      - uses: actions/upload-artifact@v4
+          brew bundle install
+          echo "$(brew --prefix flex)/bin" >> $GITHUB_PATH
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
+          echo "$(brew --prefix gperf)/bin" >> $GITHUB_PATH
+          echo "CMAKE_PREFIX_PATH=$(brew --prefix flex):$(brew --prefix bison):$(brew --prefix gperf)" >> $GITHUB_ENV
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.2.0
         with:
-          name: iverilog-macos-arm64
-          path: iverilog-macos-arm64.tar.gz
-
+          # Explicit so it can't drift from the upload path below
+          output-dir: dist
+        env:
+          CIBW_ARCHS: ${{ matrix.os.arch }}
+          CIBW_BUILD_VERBOSITY: "1"
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_ALL_LINUX: bash ./wheel_build/before_all_linux.sh
+          CIBW_ENVIRONMENT: >
+            MACOSX_DEPLOYMENT_TARGET=15
+            IVERILOG_WHEEL_VERSION=${{ needs.version.outputs.version }}
+          # patchelf version installed by default creates a corrupt ELF binary
+          # for vvp
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: pip3 install --upgrade patchelf && auditwheel repair -w {dest_dir} {wheel}
+          # smoke test - only run full functionality tests once
+          # (takes 3 minutes per target python version)
+          CIBW_TEST_COMMAND: (cd {project} && bash wheel_build/smoke_test.sh)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-wheels-${{ matrix.os.name }}-${{ matrix.os.arch }}
+          path: dist/*
+          if-no-files-found: error
+      - name: Full Test
+        id: full_test
+        run: |
+          pip3 install --find-links=$PWD/dist/ iverilog
+          bash .github/test.sh no-pli1
+      - uses: actions/upload-artifact@v7
+        if: always() && (steps.full_test.outcome != 'cancelled' && steps.full_test.outcome != 'skipped')
+        with:
+          name: python-wheels-${{ matrix.os.name }}-${{ matrix.os.arch }}-logs
+          path: ivtest/*log
+          
   release:
-    runs-on: ubuntu-latest
-    needs: [build-linux, build-manylinux, build-macos]
-    name: Create GitHub releases
-
+    runs-on: ubuntu-24.04
+    name: Create release
+    needs: [version, wheel-build]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v8
         with:
+          path: dist
+          pattern: python-wheels-*
           merge-multiple: true
-
-      - name: Generate release notes
-        id: meta
-        run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          FULL_SHA=$(git rev-parse HEAD)
-          DATE=$(date -u +%Y-%m-%d)
-          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
-          echo "date=$DATE" >> "$GITHUB_OUTPUT"
-          REPO_URL="${{ github.server_url }}/${{ github.repository }}"
-          printf '%s\n' \
-            "Automated build from \`master\` @ [\`${SHORT_SHA}\`](${REPO_URL}/commit/${FULL_SHA})" \
-            "" \
-            "**Built:** ${DATE}" \
-            "" \
-            "### Assets" \
-            "| File | Platform |" \
-            "|------|----------|" \
-            "| \`iverilog-anylinux-amd64.tar.gz\` | Linux x86-64 (musl, statically portable) |" \
-            "| \`iverilog-manylinux2014-amd64.tar.gz\` | Linux x86-64 (manylinux2014, glibc 2.17+) |" \
-            "| \`iverilog-macos-arm64.tar.gz\` | macOS Apple Silicon |" \
-            "" \
-            "### Installation" \
-            "\`\`\`bash" \
-            "sudo tar xzf iverilog-<platform>.tar.gz -C /" \
-            "\`\`\`" \
-            > release_notes.md
-
-      - name: Create permanent release
-        run: |
-          TAG="build-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.short_sha }}"
-          gh release create "$TAG" \
-            iverilog-anylinux-amd64.tar.gz \
-            iverilog-manylinux2014-amd64.tar.gz \
-            iverilog-macos-arm64.tar.gz \
-            --target "${{ github.sha }}" \
-            --title "Build ${{ steps.meta.outputs.date }} (${{ steps.meta.outputs.short_sha }})" \
-            --notes-file release_notes.md
+      - name: Create GitHub Release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update latest release
+          GH_TOKEN: ${{ github.token }}
+          TAG: '${{ needs.version.outputs.version }}'
         run: |
-          git tag -f latest HEAD
-          git push -f origin latest
-          gh release delete latest --yes 2>/dev/null || true
-          gh release create latest \
-            iverilog-anylinux-amd64.tar.gz \
-            iverilog-manylinux2014-amd64.tar.gz \
-            iverilog-macos-arm64.tar.gz \
-            --target "${{ github.sha }}" \
-            --title "Latest Build (${{ steps.meta.outputs.date }})" \
-            --notes-file release_notes.md \
-            --prerelease
+          gh release create "silimate-v$TAG" dist/*.whl \
+            --prerelease \
+            --repo '${{ github.repository }}' \
+            --target '${{ github.sha }}' \
+            --generate-notes \
+            --notes 'Automated build based on commit ${{ github.sha }}'
+      - name: Upload Wheels to Silimate Download Server
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVER_SSH_KEY: ${{ secrets.SILIMATE_SERVER_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p $PWD/ssh
+          echo "$SERVER_SSH_KEY" > $PWD/ssh/key
+          chmod 600 $PWD/ssh/key
+          SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=15 -i $PWD/ssh/key"
+          rsync --verbose --rsh="ssh $SSH_OPTS" --recursive $PWD/dist/\
+            ubuntu@downloads.silimate.com:/usr/share/nginx/pypi/iverilog/

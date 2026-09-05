@@ -19,16 +19,36 @@
 #
 
 # These are the variables used for compiling files
+
+## SILIMATE: verilog-vpi breaks with relocated installations of iverilog.
+##           this code block makes it so if there's an iverilog in the same
+##           directory as iverilog-vpi, the output of iverilog-vpi is used
+##           instead
+__HERE__="$(CDPATH=; cd -- "$(dirname -- "$0")" && pwd)"
+RESOLVED_INCLUDE_DIR=@INCLUDEDIR@
+RESOLVED_LIBDIR=@LIBDIR@
+IVERILOG_BIN="$__HERE__/iverilog"
+if command -v $IVERILOG_BIN 2>&1 > /dev/null; then
+    potential_include_dir="$($IVERILOG_BIN -R | grep "includedir: " | sed "s/includedir: //")/iverilog"
+    if [ -d "$potential_include_dir" ]; then
+        RESOLVED_INCLUDE_DIR=$potential_include_dir
+    fi
+    potential_lib_dir="$($IVERILOG_BIN -R | grep "libdir: " | sed "s/libdir: //")"
+    if [ -d "$potential_lib_dir" ]; then
+        RESOLVED_LIBDIR=$potential_lib_dir
+    fi
+fi
+
 CC="@IVCC@"
 CXX="@IVCXX@"
-CFLAGS="@PIC@ @IVCFLAGS@ -I@INCLUDEDIR@"
-CXXFLAGS="@PIC@ @IVCXXFLAGS@ -I@INCLUDEDIR@"
+CFLAGS="@PIC@ @IVCFLAGS@ -I$RESOLVED_INCLUDE_DIR"
+CXXFLAGS="@PIC@ @IVCXXFLAGS@ -I$RESOLVED_INCLUDE_DIR"
 
 SUFFIX=@SUFFIX@
 
 # These are used for linking...
 LD=$CC
-LDFLAGS="@IVCTARGETFLAGS@ @SHARED@ -L@LIBDIR@"
+LDFLAGS="@IVCTARGETFLAGS@ @SHARED@ -L$RESOLVED_LIBDIR"
 if [ x@ENABLE_PLI1@ = xyes ] ; then
     LDLIBS="-lveriuser$SUFFIX -lvpi$SUFFIX"
 else
