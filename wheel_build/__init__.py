@@ -20,6 +20,7 @@
 import os
 import pathlib
 import re
+import sys
 import tarfile
 import tempfile
 import sysconfig
@@ -120,7 +121,15 @@ def get_metadata_files():
     (see https://packaging.python.org/en/latest/specifications/recording-installed-packages/)
     """
     with open("README.md", "rb") as readme:
-        long_description = readme.read()
+        copyright_notice = f"""\
+Silimate Wheel Note: only the Python wrapper for IcarusVerilog is under the MIT
+license for linking purposes.
+
+Bundled binaries for IcarusVerilog remain under the GNU General Public License
+version 3. See '{PROJECT_NAME}/iverilog-binaries.COPYING'.
+
+"""
+        long_description = copyright_notice.encode("utf8") + readme.read()
 
     return {
         "WHEEL": make_message(
@@ -143,7 +152,7 @@ def get_metadata_files():
                 ("Description-Content-Type", "text/markdown"),
                 ("Classifier", "Programming Language :: Python :: 3"),
                 ("Requires-Python", ">=3.8"),
-                ("License", "GPLv2"),
+                ("License", "MIT"),
             ],
             long_description,
         ),
@@ -168,8 +177,8 @@ def prepare_metadata_for_build_wheel(metadata_directory, config_settings=None):
 
 def _ensure_autoconf_273(d):
     """
-    autoconf 2.72, included in AlmaLinux 8 packages, fails to process one or
-    more AC macros
+    Older versions of autoconf in CentOS 7/AlmaLinux 8 packages, fail to process
+    one or more AC macros
 
     meanwhile, on macOS, it is generally preferred to use the brew version as-is
     (2.73 straight from the GNU sources fails)
@@ -204,7 +213,10 @@ def _ensure_autoconf_273(d):
     src_root = d / "autoconf-src" / "autoconf-2.73"
 
     subprocess.check_call(
-        ["./configure", f"--prefix={d / 'autoconf'}",],
+        [
+            "./configure",
+            f"--prefix={d / 'autoconf'}",
+        ],
         cwd=src_root,
     )
     subprocess.check_call(
@@ -235,6 +247,8 @@ def build_wheel(wheel_dir, config_settings=None, metadata_directory=None):
         with tempfile.TemporaryDirectory(f".{PROJECT_NAME}-build", "w") as d_str:
             d = pathlib.Path(d_str)
 
+            wheel.write("COPYING", f"{PROJECT_NAME}/iverilog-binaries.COPYING")
+
             # copy python files
             wheel.write(
                 "wheel_build/iverilog/__init__.py", f"{PROJECT_NAME}/__init__.py"
@@ -249,7 +263,12 @@ def build_wheel(wheel_dir, config_settings=None, metadata_directory=None):
 
             # configure
             subprocess.check_call(["autoreconf", "-vfi"], env=env)
-            subprocess.check_call(["./configure", f"--prefix={d}"])
+
+            static_flags = ()
+            if sys.platform == "linux":
+                static_flags = ("LDFLAGS=-static-libstdc++ -static-libgcc",)
+
+            subprocess.check_call(["./configure", f"--prefix={d}", *static_flags])
 
             # build
             subprocess.check_call(

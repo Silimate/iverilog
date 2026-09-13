@@ -5,9 +5,8 @@ if command -v apk; then
         bzip2-dev gperf
 fi
 if command -v yum; then
-    dnf groupinstall -y "Development Tools"
-    dnf install -y swig flex zlib-devel readline-devel m4 perl-core \
-        bzip2-devel gperf
+    yum install -y swig flex zlib-devel readline-devel m4 perl-core \
+        bzip2-devel gperf devtoolset-11
 fi
 
 NPROC=$(getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu)
