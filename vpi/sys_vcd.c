@@ -484,31 +484,19 @@ static PLI_INT32 sys_dumplimit_calltf(ICARUS_VPI_CONST PLI_BYTE8 *name)
       return 0;
 }
 
-/* With -vcd-ports-only a scope's signals are dumped only if they are ports of a module. */
-static int skip_non_port(vpiHandle scope, vpiHandle item)
+/* Port info is not linked to its signal, so find the signal by the port's name. */
+static vpiHandle find_port_signal(vpiHandle scope, vpiHandle port)
 {
-      char *name;
-      vpiHandle ports, port;
-      int found = 0;
+      const char *name = vpi_get_str(vpiName, port);
+      size_t len = strlen(name) + 3;
+      char *escaped = malloc(len);
+      vpiHandle sig;
 
-      switch (vpi_get(vpiType, item)) {
-	  case vpiModule:
-	  case vpiGenScope:
-	  case vpiFunction:
-	  case vpiTask:
-	  case vpiNamedBegin:
-	  case vpiNamedFork:
-	    return 0;
-      }
-      if (vpi_get(vpiType, scope) != vpiModule) return 1;
-
-      name = strdup(vpi_get_str(vpiName, item));
-      ports = vpi_iterate(vpiPort, scope);
-      while (!found && ports && (port = vpi_scan(ports)))
-	    found = strcmp(vpi_get_str(vpiName, port), name) == 0;
-      if (found) vpi_free_object(ports);
-      free(name);
-      return !found;
+	/* Escaped so a '.' in the name is not read as a scope path. */
+      snprintf(escaped, len, "\\%s ", name);
+      sig = vpi_handle_by_name(escaped, scope);
+      free(escaped);
+      return sig;
 }
 
 static void scan_item(unsigned depth, vpiHandle item, int skip)
@@ -529,6 +517,8 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
             vpiTask,
             -1
       };
+        /* With -vcd-ports-only only the scopes that can hold instances are walked. */
+      static int port_scope_types[] = { vpiGenScope, vpiModule, -1 };
 
       struct t_cb_data cb;
       struct vcd_info* info;
@@ -740,6 +730,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 
 	    if (depth > 0) {
 		  int i;
+		  int *types;
 		  int nskip = (vcd_names_search(&vcd_tab, fullname) != 0);
 
 		    /* We have to always scan the scope because the
@@ -754,11 +745,20 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 		  name = vpi_get_str(vpiName, item);
 		  fprintf(dump_file, "$scope %s %s $end\n", type, name);
 
-		  for (i=0; dumpable_types[i]>0; i++) {
+		  if (dump_ports_only) {
+			vpiHandle ports = vpi_iterate(vpiPort, item);
+			vpiHandle port, sig;
+			while (ports && (port = vpi_scan(ports))) {
+			      sig = find_port_signal(item, port);
+			      if (sig) scan_item(depth-1, sig, nskip);
+			}
+		  }
+
+		  types = dump_ports_only ? port_scope_types : dumpable_types;
+		  for (i=0; types[i]>0; i++) {
 			vpiHandle hand;
-			vpiHandle argv = vpi_iterate(dumpable_types[i], item);
+			vpiHandle argv = vpi_iterate(types[i], item);
 			while (argv && (hand = vpi_scan(argv))) {
-			      if (dump_ports_only && skip_non_port(item, hand)) continue;
 			      scan_item(depth-1, hand, nskip);
 			}
 		  }
