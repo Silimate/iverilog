@@ -97,8 +97,11 @@ maximally compatible with third party tools that read waveform dumps.
 
 .TP 8
 .B -vcd-ports-only
-In VCD output, dump only the port signals of each module, leaving out
-nets internal to a module.
+In VCD output, dump only the port signals of each module scanned by
+$dumpvars, leaving out nets internal to a module. Ports are recognized
+by name, so a port declared with an explicit port expression such as
+\fB.out(sig)\fP is left out. Signals passed to $dumpvars directly are
+always dumped.
 
 .TP 8
 .B -lxt\fR|\fP-lxt-speed\fR|\fP-lxt-space

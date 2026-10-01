@@ -121,9 +121,12 @@ behavior.
 
 * -vcd-ports-only
 
-  In VCD output, dump only the port signals of each module. Nets internal to
-  a module are left out, which avoids the cost of dumping them when only the
-  values at module boundaries are needed.
+  In VCD output, dump only the port signals of each module scanned by
+  $dumpvars. Nets internal to a module are left out, which avoids the cost of
+  dumping them when only the values at module boundaries are needed. Ports
+  are recognized by name, so a port declared with an explicit port expression
+  such as ``.out(sig)`` is left out. Signals passed to $dumpvars directly are
+  always dumped.
 
 SDF Support
 ^^^^^^^^^^^
