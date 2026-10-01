@@ -1,0 +1,6 @@
+{
+    "type"   : "normal",
+    "source" : "vcd_ports_only.v",
+    "gold"   : "vcd_ports_only",
+    "vvp-args-extended" : [ "-no-date", "-vcd-ports-only" ]
+}

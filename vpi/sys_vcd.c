@@ -33,6 +33,7 @@
 
 static FILE *dump_file = NULL;
 static int   dump_no_date = 0;
+static int   dump_ports_only = 0;
 
 static struct t_vpi_time zero_delay = { vpiSimTime, 0, 0, 0.0 };
 
@@ -483,6 +484,33 @@ static PLI_INT32 sys_dumplimit_calltf(ICARUS_VPI_CONST PLI_BYTE8 *name)
       return 0;
 }
 
+/* With -vcd-ports-only a scope's signals are dumped only if they are ports of a module. */
+static int skip_non_port(vpiHandle scope, vpiHandle item)
+{
+      char *name;
+      vpiHandle ports, port;
+      int found = 0;
+
+      switch (vpi_get(vpiType, item)) {
+	  case vpiModule:
+	  case vpiGenScope:
+	  case vpiFunction:
+	  case vpiTask:
+	  case vpiNamedBegin:
+	  case vpiNamedFork:
+	    return 0;
+      }
+      if (vpi_get(vpiType, scope) != vpiModule) return 1;
+
+      name = strdup(vpi_get_str(vpiName, item));
+      ports = vpi_iterate(vpiPort, scope);
+      while (!found && ports && (port = vpi_scan(ports)))
+	    found = strcmp(vpi_get_str(vpiName, port), name) == 0;
+      if (found) vpi_free_object(ports);
+      free(name);
+      return !found;
+}
+
 static void scan_item(unsigned depth, vpiHandle item, int skip)
 {
       static int dumpable_types[] = {
@@ -730,6 +758,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 			vpiHandle hand;
 			vpiHandle argv = vpi_iterate(dumpable_types[i], item);
 			while (argv && (hand = vpi_scan(argv))) {
+			      if (dump_ports_only && skip_non_port(item, hand)) continue;
 			      scan_item(depth-1, hand, nskip);
 			}
 		  }
@@ -896,6 +925,9 @@ void sys_vcd_register(void)
       for (idx = 0 ;  idx < vlog_info.argc ;  idx += 1) {
         if (strcmp(vlog_info.argv[idx],"-no-date") == 0) {
           dump_no_date = 1;
+        }
+        if (strcmp(vlog_info.argv[idx],"-vcd-ports-only") == 0) {
+          dump_ports_only = 1;
         }
       }
 

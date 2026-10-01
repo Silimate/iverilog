@@ -119,6 +119,12 @@ behavior.
   then the suffix will be chosen based on the dump type. In any case, the
   $dumpfile system task overrides this flag.
 
+* -vcd-ports-only
+
+  In VCD output, dump only the port signals of each module. Nets internal to
+  a module are left out, which avoids the cost of dumping them when only the
+  values at module boundaries are needed.
+
 SDF Support
 ^^^^^^^^^^^
 
