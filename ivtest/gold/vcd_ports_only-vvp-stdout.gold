@@ -1,0 +1,31 @@
+VCD info: dumpfile work/vcd_ports_only.vcd opened for output.
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module main $end
+$scope module u1 $end
+$var wire 1 ! a $end
+$var wire 1 " y $end
+$scope module g $end
+$var wire 1 ! i $end
+$var wire 1 # o $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+1#
+0"
+0!
+$end
+#1
+1"
+0#
+1!
