@@ -903,9 +903,9 @@ vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
  * With -udp-init-zero, every sequential UDP instance is listed here, and
  * this read-write sync event at time 0 sets the ones still at x to 0. It
  * runs after the time 0 assignments, so it also clears an x that a clock
- * or input assigned at time 0 leaves in a UDP. Until the end of time 0,
- * an input change that would send a sequential UDP to x is ignored, so
- * setting one UDP to 0 cannot undo another it clocks.
+ * or input assigned at time 0 leaves in a UDP. From then until the end of
+ * time 0, an input change that would send a sequential UDP to x is
+ * ignored, so setting one UDP to 0 cannot undo another it clocks.
  */
 struct udp_init_zero_s : public vvp_gen_event_s {
       void run_run() override;
