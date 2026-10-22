@@ -53,6 +53,7 @@ extern "C" const char*optarg;
 #endif
 
 bool verbose_flag = false;
+bool udp_init_zero_flag = false;
 static int vvp_return_value = 0;
 static int vvp_used = 0;
 
@@ -325,6 +326,11 @@ void vvp_init(const char *logfile_name, int argc, char*argv[])
 
 	/* Make the extended arguments available to the simulation. */
       vpi_set_vlog_info(argc, argv);
+
+      for (int idx = 0 ;  idx < argc ;  idx += 1) {
+	    if (strcmp(argv[idx], "-udp-init-zero") == 0)
+		  udp_init_zero_flag = true;
+      }
 
       compile_init();
 }

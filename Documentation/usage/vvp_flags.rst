@@ -144,6 +144,19 @@ arguments to control aspects of SDF support.
 
   Print warnings and info messages.
 
+UDP Arguments
+^^^^^^^^^^^^^
+
+* -udp-init-zero
+
+  Once the events at time 0 have been processed, set every sequential UDP
+  whose output is still x to 0. Until the end of time 0, an input change that
+  would send a sequential UDP to x is ignored, so a UDP clocked by another one
+  keeps its 0 too. Gate-level cells modeled as sequential UDPs then start in a
+  known state, even where a clock or input assigned at time 0 would leave them
+  at x; one that first leaves x after time 0 can still send them to x. Outputs
+  that are 0 or 1 by then, and combinational UDPs, are not changed.
+
 Environment Variables
 ---------------------
 

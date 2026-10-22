@@ -230,6 +230,9 @@ class vvp_udp_fun_core  : public vvp_wide_fun_core, private vvp_gen_event_s {
 
       void recv_vec4_from_inputs(unsigned) override;
 
+	// Set the output to 0 if it is x (for -udp-init-zero).
+      void init_zero();
+
     private:
       void run_run() override;
 

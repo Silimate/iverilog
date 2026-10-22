@@ -899,6 +899,40 @@ vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
       return BIT4_X;
 }
 
+/*
+ * With -udp-init-zero, every sequential UDP instance is listed here, and
+ * this read-write sync event at time 0 sets the ones still at x to 0. It
+ * runs after the time 0 assignments, so it also clears an x that a clock
+ * or input assigned at time 0 leaves in a UDP. Until the end of time 0,
+ * an input change that would send a sequential UDP to x is ignored, so
+ * setting one UDP to 0 cannot undo another it clocks.
+ */
+struct udp_init_zero_s : public vvp_gen_event_s {
+      void run_run() override;
+      vector<vvp_udp_fun_core*> cores;
+};
+
+struct udp_init_zero_done_s : public vvp_gen_event_s {
+      void run_run() override;
+};
+
+static udp_init_zero_s*udp_init_zero = 0;
+static bool udp_init_zero_settling = false;
+
+void udp_init_zero_s::run_run()
+{
+      udp_init_zero = 0;
+      udp_init_zero_settling = true;
+      schedule_generic(new udp_init_zero_done_s, 0, true, true, true);
+      for (size_t idx = 0 ;  idx < cores.size() ;  idx += 1)
+	    cores[idx]->init_zero();
+}
+
+void udp_init_zero_done_s::run_run()
+{
+      udp_init_zero_settling = false;
+}
+
 vvp_udp_fun_core::vvp_udp_fun_core(vvp_net_t*net, vvp_udp_s*def)
 : vvp_wide_fun_core(net, def->port_count())
 {
@@ -916,6 +950,14 @@ vvp_udp_fun_core::vvp_udp_fun_core(vvp_net_t*net, vvp_udp_s*def)
 	    schedule_generic(this, 0, false);
       else
 	    schedule_functor(this);
+
+      if (udp_init_zero_flag && def_->is_sequential()) {
+	    if (!udp_init_zero) {
+		  udp_init_zero = new udp_init_zero_s;
+		  schedule_generic(udp_init_zero, 0, true, false, true);
+	    }
+	    udp_init_zero->cores.push_back(this);
+      }
 }
 
 vvp_udp_fun_core::~vvp_udp_fun_core()
@@ -930,6 +972,14 @@ void vvp_udp_fun_core::run_run()
       vvp_vector4_t tmp (1);
       tmp.set_bit(0, cur_out_);
       propagate_vec4(tmp);
+}
+
+void vvp_udp_fun_core::init_zero()
+{
+      if (cur_out_ != BIT4_X)
+	    return;
+      cur_out_ = BIT4_0;
+      run_run();
 }
 
 void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
@@ -964,6 +1014,9 @@ void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
       vvp_bit4_t out_bit = def_->calculate_output(current_, prev, cur_out_);
 
       if (out_bit == cur_out_)
+	    return;
+
+      if (out_bit == BIT4_X && udp_init_zero_settling && def_->is_sequential())
 	    return;
 
       cur_out_ = out_bit;
