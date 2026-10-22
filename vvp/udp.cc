@@ -685,16 +685,16 @@ bool operator == (const udp_levels_table&a, const udp_levels_table&b)
       return true;
 }
 
-/*
- * Return the inputs in cur with the current output added as the extra
- * position the sequential tables match against.
- */
-static udp_levels_table with_output(const udp_levels_table&cur, unsigned ports,
-				    vvp_bit4_t cur_out)
+vvp_bit4_t vvp_udp_seq_s::calculate_output(const udp_levels_table&cur,
+					   const udp_levels_table&prev,
+					   vvp_bit4_t cur_out)
 {
+      if (cur == prev)
+	    return cur_out;
+
       udp_levels_table cur_tmp = cur;
 
-      unsigned long mask_out = 1UL << ports;
+      unsigned long mask_out = 1UL << port_count();
       switch (cur_out) {
 	  case BIT4_0:
 	    cur_tmp.mask0 |= mask_out;
@@ -706,18 +706,6 @@ static udp_levels_table with_output(const udp_levels_table&cur, unsigned ports,
 	    cur_tmp.maskx |= mask_out;
 	    break;
       }
-
-      return cur_tmp;
-}
-
-vvp_bit4_t vvp_udp_seq_s::calculate_output(const udp_levels_table&cur,
-					   const udp_levels_table&prev,
-					   vvp_bit4_t cur_out)
-{
-      if (cur == prev)
-	    return cur_out;
-
-      udp_levels_table cur_tmp = with_output(cur, port_count(), cur_out);
 
       vvp_bit4_t lev = test_levels_(cur_tmp);
       if (lev == BIT4_Z) {
@@ -829,7 +817,15 @@ bool vvp_udp_seq_s::inputs_set_output(const udp_levels_table&cur) const
 bool vvp_udp_seq_s::level_row_matches(const udp_levels_table&cur,
 				      vvp_bit4_t cur_out)
 {
-      return test_levels_(with_output(cur, port_count(), cur_out)) != BIT4_Z;
+      udp_levels_table cur_tmp = cur;
+      unsigned long mask_out = 1UL << port_count();
+      if (cur_out == BIT4_0)
+	    cur_tmp.mask0 |= mask_out;
+      else if (cur_out == BIT4_1)
+	    cur_tmp.mask1 |= mask_out;
+      else
+	    cur_tmp.maskx |= mask_out;
+      return test_levels_(cur_tmp) != BIT4_Z;
 }
 
 vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
