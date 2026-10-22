@@ -788,6 +788,32 @@ vvp_bit4_t vvp_udp_seq_s::test_levels_(const udp_levels_table&cur)
       return BIT4_Z;
 }
 
+static bool any_row_could_match(const udp_levels_table*rows, unsigned nrows,
+				unsigned long known0, unsigned long known1)
+{
+      for (unsigned idx = 0 ;  idx < nrows ;  idx += 1) {
+	    if ((known0 & ~rows[idx].mask0) == 0 && (known1 & ~rows[idx].mask1) == 0)
+		  return true;
+      }
+      return false;
+}
+
+/*
+ * Return true if a level row that sets the output could match the 0 and
+ * 1 inputs in cur for some value of its x inputs, whatever the current
+ * output. The inputs, not the stored state, then decide the output, as
+ * for an open latch or an active set or reset.
+ */
+bool vvp_udp_seq_s::inputs_set_output(const udp_levels_table&cur) const
+{
+      unsigned long inputs = ~ (-1UL << port_count());
+      unsigned long known0 = cur.mask0 & inputs;
+      unsigned long known1 = cur.mask1 & inputs;
+      return any_row_could_match(levels0_, nlevels0_, known0, known1)
+	  || any_row_could_match(levels1_, nlevels1_, known0, known1)
+	  || any_row_could_match(levelsx_, nlevelsx_, known0, known1);
+}
+
 vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
 				      const udp_levels_table&prev)
 {
@@ -901,11 +927,12 @@ vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
 
 /*
  * With -udp-init-zero, every sequential UDP instance is listed here, and
- * this read-write sync event at time 0 sets the ones still at x to 0. It
- * runs after the time 0 assignments, so it also clears an x that a clock
- * or input assigned at time 0 leaves in a UDP. From then until the end of
- * time 0, an input change that would send a sequential UDP to x is
- * ignored, so setting one UDP to 0 cannot undo another it clocks.
+ * this read-write sync event at time 0 sets the ones whose x is stored
+ * state to 0. It runs after the time 0 assignments, so it also clears an
+ * x that a clock or input assigned at time 0 leaves in a UDP. From then
+ * until the end of time 0, a sequential UDP output only changes from x
+ * to 0 or 1, so the clear is not a clock edge and cannot keep time 0 from
+ * ending.
  */
 struct udp_init_zero_s : public vvp_gen_event_s {
       void run_run() override;
@@ -978,6 +1005,9 @@ void vvp_udp_fun_core::init_zero()
 {
       if (cur_out_ != BIT4_X)
 	    return;
+	// An open latch or active set or reset has no stored state to clear.
+      if (static_cast<vvp_udp_seq_s*>(def_)->inputs_set_output(current_))
+	    return;
       cur_out_ = BIT4_0;
       run_run();
 }
@@ -1016,7 +1046,8 @@ void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
       if (out_bit == cur_out_)
 	    return;
 
-      if (out_bit == BIT4_X && udp_init_zero_settling && def_->is_sequential())
+      if (udp_init_zero_settling && def_->is_sequential()
+	  && (out_bit == BIT4_X || cur_out_ != BIT4_X))
 	    return;
 
       cur_out_ = out_bit;

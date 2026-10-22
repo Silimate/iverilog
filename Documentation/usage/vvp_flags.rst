@@ -147,18 +147,21 @@ arguments to control aspects of SDF support.
 UDP Arguments
 ^^^^^^^^^^^^^
 
+These arguments change how user defined primitives (UDPs) are simulated.
+
 * -udp-init-zero
 
   Once the events at time 0 have been processed, set every sequential UDP
-  whose output is still x to 0. From then until the end of time 0, an input
-  change that would send a sequential UDP to x is ignored, so a UDP clocked by
-  another one keeps its 0 too. Gate-level cells modeled as sequential UDPs then
-  start in a known state, even where a clock or input assigned at time 0 would
-  leave them at x; one that first leaves x after time 0 can still send them to
-  x. Outputs that are 0 or 1 by then, and combinational UDPs, are not changed.
-  A zero-delay loop through a transparent latch that settles at x without this
-  argument, such as a latch fed by its own inverted output, can oscillate at
-  time 0 with it.
+  whose output is still x to 0, unless its inputs may decide its output, as
+  for an open latch or an active set or reset. Until the end of time 0, a
+  sequential UDP output then only changes from x, so the 0 does not clock
+  another UDP and cannot keep time 0 from ending. Gate-level cells modeled as
+  sequential UDPs then start in a known state, even where a clock or input
+  assigned at time 0 would leave them at x. A clock or input that first leaves
+  x after time 0, or a 0 that reaches a UDP through a delay, can still send
+  them to x. A latch cleared while closed and fed by its own inverted output
+  oscillates once it opens, as it would after a reset. Combinational UDPs are
+  not changed.
 
 Environment Variables
 ---------------------
