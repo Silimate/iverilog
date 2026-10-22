@@ -1,0 +1,5 @@
+{
+    "type"   : "normal",
+    "source" : "udp_init_zero.v",
+    "gold"   : "udp_init_zero_default"
+}
