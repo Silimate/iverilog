@@ -1,8 +1,8 @@
 // Check that -udp-init-zero sets each sequential UDP whose x is stored state
 // to 0 once time 0 settles, also one clocked by another, without the clear
 // clocking it; leaves an open latch to its input, so a latch fed by its own
-// inverse stays x instead of oscillating; and leaves known outputs and
-// combinational UDPs alone.
+// inverse stays x instead of oscillating, while level changes still apply;
+// and leaves known outputs and combinational UDPs alone.
 
 // No row for a clock falling from x: the x->0 clock at time 0 sets q to x.
 primitive dff (q, d, clk);
@@ -79,8 +79,8 @@ primitive xone (o, i);
 endprimitive
 
 module main;
-   reg d, clk, dl;
-   wire q, q1, b, qb, q2, qn, ql, clkn, q5, c, q6, qr, qrn, ql7;
+   reg d, clk, dl, dl2;
+   wire q, q1, b, qb, q2, qn, ql, clkn, q5, c, q6, qr, qrn, ql7, ql8;
 
    dff u0 (q, d, clk);
    dff_init1 u1 (q1, d, clk);
@@ -103,12 +103,17 @@ module main;
    latch u8 (qr, qrn, 1'b1);
    // An x at time 1 is honoured.
    latch u9 (ql7, dl, 1'b1);
+   // Open and known, with its input set by a process u0 being cleared wakes:
+   // a level change still applies within time 0.
+   latch u10 (ql8, dl2, 1'b1);
+   always @(negedge q) dl2 = 1;
 
    initial begin
       clk = 0;
       dl = 0;
-      #1 $display("before: q=%b q1=%b b=%b q2=%b ql=%b q5=%b c=%b q6=%b qr=%b",
-                  q, q1, b, q2, ql, q5, c, q6, qr);
+      dl2 = 0;
+      #1 $display("before: q=%b q1=%b b=%b q2=%b ql=%b q5=%b c=%b q6=%b qr=%b ql8=%b",
+                  q, q1, b, q2, ql, q5, c, q6, qr, ql8);
       d = 1;
       dl = 1'bx;
       #1 clk = 1;

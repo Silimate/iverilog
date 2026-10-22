@@ -685,16 +685,16 @@ bool operator == (const udp_levels_table&a, const udp_levels_table&b)
       return true;
 }
 
-vvp_bit4_t vvp_udp_seq_s::calculate_output(const udp_levels_table&cur,
-					   const udp_levels_table&prev,
-					   vvp_bit4_t cur_out)
+/*
+ * Return the inputs in cur with the current output added as the extra
+ * position the sequential tables match against.
+ */
+static udp_levels_table with_output(const udp_levels_table&cur, unsigned ports,
+				    vvp_bit4_t cur_out)
 {
-      if (cur == prev)
-	    return cur_out;
-
       udp_levels_table cur_tmp = cur;
 
-      unsigned long mask_out = 1UL << port_count();
+      unsigned long mask_out = 1UL << ports;
       switch (cur_out) {
 	  case BIT4_0:
 	    cur_tmp.mask0 |= mask_out;
@@ -706,6 +706,18 @@ vvp_bit4_t vvp_udp_seq_s::calculate_output(const udp_levels_table&cur,
 	    cur_tmp.maskx |= mask_out;
 	    break;
       }
+
+      return cur_tmp;
+}
+
+vvp_bit4_t vvp_udp_seq_s::calculate_output(const udp_levels_table&cur,
+					   const udp_levels_table&prev,
+					   vvp_bit4_t cur_out)
+{
+      if (cur == prev)
+	    return cur_out;
+
+      udp_levels_table cur_tmp = with_output(cur, port_count(), cur_out);
 
       vvp_bit4_t lev = test_levels_(cur_tmp);
       if (lev == BIT4_Z) {
@@ -812,6 +824,12 @@ bool vvp_udp_seq_s::inputs_set_output(const udp_levels_table&cur) const
       return any_row_could_match(levels0_, nlevels0_, known0, known1)
 	  || any_row_could_match(levels1_, nlevels1_, known0, known1)
 	  || any_row_could_match(levelsx_, nlevelsx_, known0, known1);
+}
+
+bool vvp_udp_seq_s::level_row_matches(const udp_levels_table&cur,
+				      vvp_bit4_t cur_out)
+{
+      return test_levels_(with_output(cur, port_count(), cur_out)) != BIT4_Z;
 }
 
 vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
@@ -930,9 +948,9 @@ vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
  * this read-write sync event at time 0 sets the ones whose x is stored
  * state to 0. It runs after the time 0 assignments, so it also clears an
  * x that a clock or input assigned at time 0 leaves in a UDP. From then
- * until the end of time 0, a sequential UDP output only changes from x
- * to 0 or 1, so the clear is not a clock edge and cannot keep time 0 from
- * ending.
+ * until the end of time 0, a sequential UDP output does not go back to x,
+ * and a known one changes only by a level row, such as an open latch or a
+ * set or reset, so the clear is not a clock edge.
  */
 struct udp_init_zero_s : public vvp_gen_event_s {
       void run_run() override;
@@ -1046,8 +1064,12 @@ void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
       if (out_bit == cur_out_)
 	    return;
 
+	// While time 0 settles after -udp-init-zero, a sequential UDP does
+	// not go back to x, and only a level row changes a known output.
       if (udp_init_zero_settling && def_->is_sequential()
-	  && (out_bit == BIT4_X || cur_out_ != BIT4_X))
+	  && (out_bit == BIT4_X
+	      || (cur_out_ != BIT4_X
+		  && !static_cast<vvp_udp_seq_s*>(def_)->level_row_matches(current_, cur_out_))))
 	    return;
 
       cur_out_ = out_bit;

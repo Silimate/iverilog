@@ -193,6 +193,10 @@ class vvp_udp_seq_s : public vvp_udp_s {
 	// state, may decide the output (for -udp-init-zero).
       bool inputs_set_output(const udp_levels_table&cur) const;
 
+	// Return true if a level row, not an edge row, gives the output
+	// for the inputs in cur (for -udp-init-zero).
+      bool level_row_matches(const udp_levels_table&cur, vvp_bit4_t cur_out);
+
     private:
       vvp_bit4_t test_levels_(const udp_levels_table&cur);
 
