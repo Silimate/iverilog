@@ -75,8 +75,8 @@ Print the version of the runtime, and exit.
 .PP
 The vvp options described above must come before the design file name.
 After the design file name, however, there may be any number of
-unspecified arguments. These arguments are not interpreted by vvp but
-are instead passed on to the executed design, and are available via
+unspecified arguments. These arguments are passed on to the executed
+design, and are available via
 the \fI$test$plusargs\fP and \fI$value$plusargs\fP system functions.
 .PP
 Arguments that do not start with the plus(+) character are not
@@ -85,9 +85,9 @@ accessed via PLI code via the \fIvpi_get_vlog_info\fP function. This
 means that vpi modules may use arguments that do not start with + and
 be assured that they do not interfere with user defined plus-args.
 .PP
-There are a few extended arguments that are interpreted by the
-standard system.vpi module, which implements the standard system tasks
-and are always included. These arguments are described here.
+There are a few extended arguments that are interpreted by vvp itself
+or by the standard system.vpi module, which implements the standard
+system tasks and is always included. These arguments are described here.
 .TP 8
 .B -vcd
 This extended argument sets the wave dump format to VCD. This is the
@@ -165,6 +165,21 @@ This is shorthand for \-sdf\-info \-sdf\-warn.
 This extended argument enables improved compatibility with other
 simulators. At present this only affects the display format for
 real numbers when no format string is supplied.
+
+.TP 8
+.B -udp-init-zero
+Once the events at time 0 have been processed, set every sequential UDP
+whose output is still x to 0, unless its inputs may decide its output,
+as for an open latch or an active set or reset. Until the end of time 0,
+a sequential UDP output then does not go back to x, and a known one
+changes only through a level-sensitive row, as in an open latch or a set
+or reset, so the 0 does not clock another UDP. Gate-level cells
+modeled as sequential UDPs then start in a known state, even where a
+clock or input assigned at time 0 would leave them at x. A clock or
+input that first leaves x after time 0, or a 0 that reaches a UDP
+through a delay, can still send them to x. A latch cleared while closed
+and fed by its own inverted output oscillates once it opens, as it would
+after a reset. Combinational UDPs are not changed.
 
 .SH ENVIRONMENT
 .PP

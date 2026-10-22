@@ -1,0 +1,6 @@
+{
+    "type"   : "normal",
+    "source" : "udp_init_zero.v",
+    "gold"   : "udp_init_zero",
+    "vvp-args-extended" : [ "-udp-init-zero" ]
+}

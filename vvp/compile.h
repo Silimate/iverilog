@@ -48,6 +48,9 @@ extern void compile_cleanup(void);
 
 extern bool verbose_flag;
 
+/* If set, sequential UDPs still at x once time 0 settles are set to 0. */
+extern bool udp_init_zero_flag;
+
 /*
  * If this file opened, then write debug information to this
  * file. This is used for debugging the VVP runtime itself.
