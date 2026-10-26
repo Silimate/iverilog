@@ -189,9 +189,9 @@ class vvp_udp_seq_s : public vvp_udp_s {
 				  const udp_levels_table&prev,
 				  vvp_bit4_t cur_out) override;
 
-	// Return true if a level row could change a stored val with the
+	// Return true if a level row could change a stored 0 with the
 	// inputs in cur (for -udp-init-zero).
-      bool level_row_changes(const udp_levels_table&cur, vvp_bit4_t val) const;
+      bool inputs_set_output(const udp_levels_table&cur) const;
 
 	// Return true if a level row, not an edge row, gives the output
 	// for the inputs in cur (for -udp-init-zero).
@@ -238,8 +238,7 @@ class vvp_udp_fun_core  : public vvp_wide_fun_core, private vvp_gen_event_s {
 
       void recv_vec4_from_inputs(unsigned) override;
 
-	// Set an x output to 0, or to 1 where a level row rules out 0
-	// (for -udp-init-zero).
+	// Set the output to 0 if its x is stored state (for -udp-init-zero).
       void init_zero();
 
     private:
