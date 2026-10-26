@@ -789,34 +789,31 @@ vvp_bit4_t vvp_udp_seq_s::test_levels_(const udp_levels_table&cur)
 }
 
 static bool any_row_could_match(const udp_levels_table*rows, unsigned nrows,
-				unsigned long known0, unsigned long known1,
-				unsigned long state)
+				unsigned long known0, unsigned long known1)
 {
       for (unsigned idx = 0 ;  idx < nrows ;  idx += 1) {
-	    if ((known0 & ~rows[idx].mask0) == 0 && (known1 & ~rows[idx].mask1) == 0
-		&& (rows[idx].maskx & state))
+	    if ((known0 & ~rows[idx].mask0) == 0 && (known1 & ~rows[idx].mask1) == 0)
 		  return true;
       }
       return false;
 }
 
 /*
- * Return true if a level row that sets the output could match the 0 and
- * 1 inputs in cur for some value of its x inputs, while the output is
- * still x. The inputs, not the stored state, then decide the output, as
- * for an open latch or an active set or reset. A row that only holds a
- * stored 0 or 1, such as one that reduces pessimism while the clock is
- * steady, does not apply to an x output.
+ * Return true if a level row could change a stored val to another value
+ * for some value of the x inputs in cur. The UDP can only start at a
+ * value no level row changes: an open latch or an active set or reset
+ * rules values out, and a row that only keeps a stored 0 or 1 does not.
  */
-bool vvp_udp_seq_s::inputs_set_output(const udp_levels_table&cur) const
+bool vvp_udp_seq_s::level_row_changes(const udp_levels_table&cur,
+				      vvp_bit4_t val) const
 {
       unsigned long inputs = ~ (-1UL << port_count());
-      unsigned long known0 = cur.mask0 & inputs;
-      unsigned long known1 = cur.mask1 & inputs;
       unsigned long state = 1UL << port_count();
-      return any_row_could_match(levels0_, nlevels0_, known0, known1, state)
-	  || any_row_could_match(levels1_, nlevels1_, known0, known1, state)
-	  || any_row_could_match(levelsx_, nlevelsx_, known0, known1, state);
+      unsigned long known0 = (cur.mask0 & inputs) | (val == BIT4_0? state : 0);
+      unsigned long known1 = (cur.mask1 & inputs) | (val == BIT4_1? state : 0);
+      return (val != BIT4_0 && any_row_could_match(levels0_, nlevels0_, known0, known1))
+	  || (val != BIT4_1 && any_row_could_match(levels1_, nlevels1_, known0, known1))
+	  || any_row_could_match(levelsx_, nlevelsx_, known0, known1);
 }
 
 bool vvp_udp_seq_s::level_row_matches(const udp_levels_table&cur,
@@ -951,7 +948,8 @@ vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
  * x that a clock or input assigned at time 0 leaves in a UDP. From then
  * until the end of time 0, a sequential UDP output does not go back to x,
  * and a known one changes only by a level row, such as an open latch or a
- * set or reset, so the clear is not a clock edge.
+ * set or reset, so the clear is not a clock edge. A UDP its x inputs kept
+ * at x is listed again when they change, and tried once they settle.
  */
 struct udp_init_zero_s : public vvp_gen_event_s {
       void run_run() override;
@@ -965,11 +963,22 @@ struct udp_init_zero_done_s : public vvp_gen_event_s {
 static udp_init_zero_s*udp_init_zero = 0;
 static bool udp_init_zero_settling = false;
 
+static void queue_init_zero(vvp_udp_fun_core*core)
+{
+      if (!udp_init_zero) {
+	    udp_init_zero = new udp_init_zero_s;
+	    schedule_generic(udp_init_zero, 0, true, false, true);
+      }
+      udp_init_zero->cores.push_back(core);
+}
+
 void udp_init_zero_s::run_run()
 {
       udp_init_zero = 0;
-      udp_init_zero_settling = true;
-      schedule_generic(new udp_init_zero_done_s, 0, true, true, true);
+      if (!udp_init_zero_settling) {
+	    udp_init_zero_settling = true;
+	    schedule_generic(new udp_init_zero_done_s, 0, true, true, true);
+      }
       for (size_t idx = 0 ;  idx < cores.size() ;  idx += 1)
 	    cores[idx]->init_zero();
 }
@@ -997,13 +1006,8 @@ vvp_udp_fun_core::vvp_udp_fun_core(vvp_net_t*net, vvp_udp_s*def)
       else
 	    schedule_functor(this);
 
-      if (udp_init_zero_flag && def_->is_sequential()) {
-	    if (!udp_init_zero) {
-		  udp_init_zero = new udp_init_zero_s;
-		  schedule_generic(udp_init_zero, 0, true, false, true);
-	    }
-	    udp_init_zero->cores.push_back(this);
-      }
+      if (udp_init_zero_flag && def_->is_sequential())
+	    queue_init_zero(this);
 }
 
 vvp_udp_fun_core::~vvp_udp_fun_core()
@@ -1024,11 +1028,15 @@ void vvp_udp_fun_core::init_zero()
 {
       if (cur_out_ != BIT4_X)
 	    return;
-	// An open latch or active set or reset has no stored state to clear.
-      if (static_cast<vvp_udp_seq_s*>(def_)->inputs_set_output(current_))
+      const vvp_udp_seq_s*def = static_cast<vvp_udp_seq_s*>(def_);
+	// Start at 0, else at 1 (an active set), else stay x (an open latch).
+      if (!def->level_row_changes(current_, BIT4_0))
+	    cur_out_ = BIT4_0;
+      else if (!def->level_row_changes(current_, BIT4_1))
+	    cur_out_ = BIT4_1;
+      else
 	    return;
-      cur_out_ = BIT4_0;
-      run_run();
+      schedule_functor(this);
 }
 
 void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
@@ -1062,8 +1070,12 @@ void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
 
       vvp_bit4_t out_bit = def_->calculate_output(current_, prev, cur_out_);
 
-      if (out_bit == cur_out_)
+      if (out_bit == cur_out_) {
+	      // An x left by -udp-init-zero is tried again once time 0 settles.
+	    if (udp_init_zero_settling && cur_out_ == BIT4_X && def_->is_sequential())
+		  queue_init_zero(this);
 	    return;
+      }
 
 	// While time 0 settles after -udp-init-zero, a sequential UDP does
 	// not go back to x, and only a level row changes a known output.
