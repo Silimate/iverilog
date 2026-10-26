@@ -153,7 +153,9 @@ These arguments change how user defined primitives (UDPs) are simulated.
 
   Once the events at time 0 have been processed, set every sequential UDP
   whose output is still x to 0, unless its inputs may decide its output, as
-  for an open latch or an active set or reset. Until the end of time 0, a
+  for an open latch or an active set or reset. A level-sensitive row that
+  only keeps a stored 0 or 1, as written to reduce pessimism while a clock is
+  steady, does not count. Until the end of time 0, a
   sequential UDP output then does not go back to x, and a known one changes
   only through a level-sensitive row, as in an open latch or a set or reset,
   so the 0 does not clock another UDP. Gate-level cells modeled as

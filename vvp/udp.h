@@ -190,7 +190,7 @@ class vvp_udp_seq_s : public vvp_udp_s {
 				  vvp_bit4_t cur_out) override;
 
 	// Return true if the inputs in cur, rather than the stored
-	// state, may decide the output (for -udp-init-zero).
+	// state, may decide the output while it is x (for -udp-init-zero).
       bool inputs_set_output(const udp_levels_table&cur) const;
 
 	// Return true if a level row, not an edge row, gives the output

@@ -1,3 +1,3 @@
-before: q=0 q1=1 b=x q2=0 ql=1 q5=0 c=x q6=0 qr=x ql8=1
-after: q=1 q1=1 b=1 q2=1 ql=0 ql7=x
+before: q=0 q1=1 b=x q2=0 ql=1 q5=0 c=x q6=0 qr=x ql8=1 qh=0
+after: q=1 q1=1 b=1 q2=1 ql=0 ql7=x qh=1
 x after time 0: q=x

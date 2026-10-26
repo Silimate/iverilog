@@ -789,10 +789,12 @@ vvp_bit4_t vvp_udp_seq_s::test_levels_(const udp_levels_table&cur)
 }
 
 static bool any_row_could_match(const udp_levels_table*rows, unsigned nrows,
-				unsigned long known0, unsigned long known1)
+				unsigned long known0, unsigned long known1,
+				unsigned long state)
 {
       for (unsigned idx = 0 ;  idx < nrows ;  idx += 1) {
-	    if ((known0 & ~rows[idx].mask0) == 0 && (known1 & ~rows[idx].mask1) == 0)
+	    if ((known0 & ~rows[idx].mask0) == 0 && (known1 & ~rows[idx].mask1) == 0
+		&& (rows[idx].maskx & state))
 		  return true;
       }
       return false;
@@ -800,18 +802,21 @@ static bool any_row_could_match(const udp_levels_table*rows, unsigned nrows,
 
 /*
  * Return true if a level row that sets the output could match the 0 and
- * 1 inputs in cur for some value of its x inputs, whatever the current
- * output. The inputs, not the stored state, then decide the output, as
- * for an open latch or an active set or reset.
+ * 1 inputs in cur for some value of its x inputs, while the output is
+ * still x. The inputs, not the stored state, then decide the output, as
+ * for an open latch or an active set or reset. A row that only holds a
+ * stored 0 or 1, such as one that reduces pessimism while the clock is
+ * steady, does not apply to an x output.
  */
 bool vvp_udp_seq_s::inputs_set_output(const udp_levels_table&cur) const
 {
       unsigned long inputs = ~ (-1UL << port_count());
       unsigned long known0 = cur.mask0 & inputs;
       unsigned long known1 = cur.mask1 & inputs;
-      return any_row_could_match(levels0_, nlevels0_, known0, known1)
-	  || any_row_could_match(levels1_, nlevels1_, known0, known1)
-	  || any_row_could_match(levelsx_, nlevelsx_, known0, known1);
+      unsigned long state = 1UL << port_count();
+      return any_row_could_match(levels0_, nlevels0_, known0, known1, state)
+	  || any_row_could_match(levels1_, nlevels1_, known0, known1, state)
+	  || any_row_could_match(levelsx_, nlevelsx_, known0, known1, state);
 }
 
 bool vvp_udp_seq_s::level_row_matches(const udp_levels_table&cur,
