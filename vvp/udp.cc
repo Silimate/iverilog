@@ -946,7 +946,8 @@ vvp_bit4_t vvp_udp_seq_s::test_edges_(const udp_levels_table&cur,
  * x that a clock or input assigned at time 0 leaves in a UDP. From then
  * until the end of time 0, a sequential UDP output does not go back to x,
  * and a known one changes only by a level row, such as an open latch or a
- * set or reset, so the clear is not a clock edge.
+ * set or reset, so the clear is not a clock edge. One left at x is listed
+ * again when an input changes, and tried once time 0 settles.
  */
 struct udp_init_zero_s : public vvp_gen_event_s {
       void run_run() override;
@@ -960,11 +961,22 @@ struct udp_init_zero_done_s : public vvp_gen_event_s {
 static udp_init_zero_s*udp_init_zero = 0;
 static bool udp_init_zero_settling = false;
 
+static void queue_init_zero(vvp_udp_fun_core*core)
+{
+      if (!udp_init_zero) {
+	    udp_init_zero = new udp_init_zero_s;
+	    schedule_generic(udp_init_zero, 0, true, false, true);
+      }
+      udp_init_zero->cores.push_back(core);
+}
+
 void udp_init_zero_s::run_run()
 {
       udp_init_zero = 0;
-      udp_init_zero_settling = true;
-      schedule_generic(new udp_init_zero_done_s, 0, true, true, true);
+      if (!udp_init_zero_settling) {
+	    udp_init_zero_settling = true;
+	    schedule_generic(new udp_init_zero_done_s, 0, true, true, true);
+      }
       for (size_t idx = 0 ;  idx < cores.size() ;  idx += 1)
 	    cores[idx]->init_zero();
 }
@@ -992,13 +1004,8 @@ vvp_udp_fun_core::vvp_udp_fun_core(vvp_net_t*net, vvp_udp_s*def)
       else
 	    schedule_functor(this);
 
-      if (udp_init_zero_flag && def_->is_sequential()) {
-	    if (!udp_init_zero) {
-		  udp_init_zero = new udp_init_zero_s;
-		  schedule_generic(udp_init_zero, 0, true, false, true);
-	    }
-	    udp_init_zero->cores.push_back(this);
-      }
+      if (udp_init_zero_flag && def_->is_sequential())
+	    queue_init_zero(this);
 }
 
 vvp_udp_fun_core::~vvp_udp_fun_core()
@@ -1057,8 +1064,12 @@ void vvp_udp_fun_core::recv_vec4_from_inputs(unsigned port)
 
       vvp_bit4_t out_bit = def_->calculate_output(current_, prev, cur_out_);
 
-      if (out_bit == cur_out_)
+      if (out_bit == cur_out_) {
+	      // An x left by -udp-init-zero is tried again once time 0 settles.
+	    if (udp_init_zero_settling && cur_out_ == BIT4_X && def_->is_sequential())
+		  queue_init_zero(this);
 	    return;
+      }
 
 	// While time 0 settles after -udp-init-zero, a sequential UDP does
 	// not go back to x, and only a level row changes a known output.
