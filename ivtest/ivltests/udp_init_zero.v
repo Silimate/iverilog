@@ -2,7 +2,9 @@
 // to 0 once time 0 settles, also one clocked by another, without the clear
 // clocking it; leaves an open latch to its input, so a latch fed by its own
 // inverse stays x instead of oscillating, while level changes still apply;
-// and leaves known outputs and combinational UDPs alone.
+// clears a flop whose level rows only hold a stored value, but not one a held
+// set row for a stored 0 or 1 would change; tries one left at x again once its
+// inputs settle; and leaves known outputs and combinational UDPs alone.
 
 // No row for a clock falling from x: the x->0 clock at time 0 sets q to x.
 primitive dff (q, d, clk);
@@ -47,6 +49,58 @@ primitive dff_x1 (q, d, clk);
    endtable
 endprimitive
 
+// Its level rows only keep a stored 0 or 1 while the clock is low, so they
+// do not decide an x output, even while d is x.
+primitive dff_hold (q, d, clk);
+   output q;
+   reg q;
+   input d, clk;
+   table
+   // d  clk  : q : q+
+      0  (01) : ? : 0;
+      1  (01) : ? : 1;
+      0  0    : 0 : 0;
+      1  0    : 1 : 1;
+      ?  (?0) : ? : -;
+      *  ?    : ? : -;
+   endtable
+endprimitive
+
+// Its set row only applies to a stored 0 or 1, so a held set would change a
+// cleared 0.
+primitive dff_setb (q, d, clk, s);
+   output q;
+   reg q;
+   input d, clk, s;
+   table
+   // d  clk  s    : q : q+
+      ?  ?    1    : b : 1;
+      0  (01) 0    : ? : 0;
+      1  (01) 0    : ? : 1;
+      ?  (?0) 0    : ? : -;
+      *  ?    0    : ? : -;
+      ?  ?    (?0) : ? : -;
+   endtable
+endprimitive
+
+// While set and reset are x, a set row could change a cleared 0.
+primitive dff_sr (q, d, clk, s, r);
+   output q;
+   reg q;
+   input d, clk, s, r;
+   table
+   // d  clk  s    r    : q : q+
+      ?  ?    1    0    : ? : 1;
+      ?  ?    0    1    : ? : 0;
+      0  (01) 0    0    : ? : 0;
+      1  (01) 0    0    : ? : 1;
+      ?  (?0) 0    0    : ? : -;
+      *  ?    0    0    : ? : -;
+      ?  ?    (?0) 0    : ? : -;
+      ?  ?    0    (?0) : ? : -;
+   endtable
+endprimitive
+
 primitive latch (q, d, en);
    output q;
    reg q;
@@ -80,7 +134,7 @@ endprimitive
 
 module main;
    reg d, clk, dl, dl2;
-   wire q, q1, b, qb, q2, qn, ql, clkn, q5, c, q6, qr, qrn, ql7, ql8;
+   wire q, q1, b, qb, q2, qn, ql, clkn, q5, c, q6, qr, qrn, ql7, ql8, qh, qs, qsr, qz;
 
    dff u0 (q, d, clk);
    dff_init1 u1 (q1, d, clk);
@@ -107,18 +161,26 @@ module main;
    // a level change still applies within time 0.
    latch u10 (ql8, dl2, 1'b1);
    always @(negedge q) dl2 = 1;
+   // Its hold rows do not keep it at x.
+   dff_hold u11 (qh, d, clk);
+   // A held set leaves it at x rather than at a cleared 0.
+   dff_setb u12 (qs, d, clk, 1'b1);
+   // Its set and reset follow u14, so it is left at x, then tried again once
+   // u14 is cleared, whichever is tried first.
+   dff_sr u13 (qsr, d, clk, qz, qz);
+   dff u14 (qz, d, clk);
 
    initial begin
       clk = 0;
       dl = 0;
       dl2 = 0;
-      #1 $display("before: q=%b q1=%b b=%b q2=%b ql=%b q5=%b c=%b q6=%b qr=%b ql8=%b",
-                  q, q1, b, q2, ql, q5, c, q6, qr, ql8);
+      #1 $display("before: q=%b q1=%b b=%b q2=%b ql=%b q5=%b c=%b q6=%b qr=%b ql8=%b qh=%b qs=%b qsr=%b",
+                  q, q1, b, q2, ql, q5, c, q6, qr, ql8, qh, qs, qsr);
       d = 1;
       dl = 1'bx;
       #1 clk = 1;
-      #1 $display("after: q=%b q1=%b b=%b q2=%b ql=%b ql7=%b",
-                  q, q1, b, q2, ql, ql7);
+      #1 $display("after: q=%b q1=%b b=%b q2=%b ql=%b ql7=%b qh=%b",
+                  q, q1, b, q2, ql, ql7, qh);
       // After time 0 an x is honoured again.
       d = 1'bx;
       clk = 0;
